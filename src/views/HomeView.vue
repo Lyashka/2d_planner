@@ -1,19 +1,37 @@
 <template>
- <div>
-  <CategoryList :categories="categories"/>
- </div>
+<div>
+<!--  <header class="page-header">Header</header>-->
+  <div class="home-view" >
+    <CategoryList  />
+  </div>
+</div>
+
 </template>
 
 <script setup>
-import CategoryList from '/category-list/src/category-list.js';
-
- const categories = [
-  { id: 1, name: 'Категория 1', link: '/category1' },
-  { id: 2, name: 'Категория 2', link: '/category2' },
-]
+import CategoryList from '/category-list/src/planner2d.js';
 
 </script>
 
 <style>
-@import '/category-list/src/style.css';
+
+*{
+  margin: 0;
+  padding: 0;
+}
+.page-header{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 20px;
+  width: 100%;
+  height: 40px;
+  background-color: aqua;
+}
+.home-view{
+  display: block;
+  border: 5px solid black;
+  //position: absolute;
+  background-color: aquamarine;
+}
 </style>

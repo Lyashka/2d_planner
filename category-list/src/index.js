@@ -1,4 +1,4 @@
-import CategoryList from './category-list.js';
+import CategoryList from './planner2d.js';
 
 // Экспорт компонента CategoryList
 export default {

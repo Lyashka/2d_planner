@@ -9,7 +9,7 @@
 </template>
 
 <script setup>
-import CategoryList from '/planner2d/src/reference_planner2d.js';
+import CategoryList from '/planner2d/src/planner2d.js';
 
 </script>
 

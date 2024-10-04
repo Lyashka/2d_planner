@@ -14,10 +14,10 @@ function translate(p, dim, sc = 1) {
 function toRad(angle) {
     return Math.PI * angle / 180;
 }
-function toDeg(angle) {
-    return 180 * angle / Math.PI;
-}
-function rotate(c, p, angle) {
+return 180 * angle / Math.PI;
+}function toDeg(angle) {
+
+    function rotate(c, p, angle) {
     const rad = toRad(angle);
     return {
         x: Math.cos(rad) * (p.x - c.x) - Math.sin(rad) * (p.y - c.y) + c.x,

@@ -1,7 +1,7 @@
 <template>
 <div>
 <!--  <header class="page-header">Header</header>-->
-  <div class="home-view" >
+  <div>
     <CategoryList  />
   </div>
 </div>
@@ -9,7 +9,7 @@
 </template>
 
 <script setup>
-import CategoryList from '/category-list/src/planner2d.js';
+import CategoryList from '/planner2d/src/reference_planner2d.js';
 
 </script>
 
@@ -28,10 +28,5 @@ import CategoryList from '/category-list/src/planner2d.js';
   height: 40px;
   background-color: aqua;
 }
-.home-view{
-  display: block;
-  border: 5px solid black;
-  //position: absolute;
-  background-color: aquamarine;
-}
+
 </style>

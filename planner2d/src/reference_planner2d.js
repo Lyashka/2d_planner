@@ -432,7 +432,7 @@ export default {
         const settings = {
             language: "en",
             mode: Mode.Room,
-            openableType: OpenableType.Left,
+            openableType: OpenableType.Right,
             type: FurnitureType.Rectangle,
             zoomFactor: 1.05,
             minZoom: 1 / 500,

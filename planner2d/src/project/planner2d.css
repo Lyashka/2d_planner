@@ -40,23 +40,27 @@ button:hover {
 button.active {
     background-color: #ccc;
 }
-
+#container {
+    position: static;
+    width: 100%;
+}
 #content {
-    position: absolute;
+    /*position: absolute;*/
     inset: 0;
     display: flex;
 }
 
 #canvas {
-    flex: 80%;
+    flex: 50%;
     height: 100%;
 }
 
 #sidebar {
-    flex: 20%;
+    flex: 100%;
     background-color: #4caf50;
     height: 100%;
-    overflow: auto;
+
+    /*overflow: auto;*/
 }
 
 .navBar {

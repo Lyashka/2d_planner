@@ -1,31 +1,32 @@
-"use strict";
-function loadOpenable(openable, graph) {
+function loadOpenable(openable: OpenableJSON, graph: Graph): Openable {
     const newOpenable = new Openable(openable.openableType, openable.p.x, openable.p.y, openable.dim.w, openable.dim.h);
     newOpenable.angle = openable.angle;
+
     newOpenable.snap.pos = openable.snap.pos;
     newOpenable.snap.orientation = openable.snap.orientation;
     if (openable.snap.edge) {
-        newOpenable.snap.edge = graph.edges[openable.snap.edge.id1][openable.snap.edge.id2];
+        newOpenable.snap.edge = graph.edges[openable.snap.edge.id1]![openable.snap.edge.id2]!;
         newOpenable.snap.edge.snapOpenables.push(newOpenable);
     }
+
     newOpenable.stroke = openable.mov.stroke;
     newOpenable.fill = openable.mov.fill;
     return newOpenable;
 }
-function loadCircle(circle) {
+function loadCircle(circle: CircleJSON): Circle {
     const newCircle = new Circle(circle.name, circle.c.x, circle.c.y, circle.r);
     newCircle.stroke = circle.mov.stroke;
     newCircle.fill = circle.mov.fill;
     return newCircle;
 }
-function loadEllipse(ellipse) {
+function loadEllipse(ellipse: EllipseJSON): Ellipse {
     const newEllipse = new Ellipse(ellipse.name, ellipse.c.x, ellipse.c.y, ellipse.rX, ellipse.rY);
     newEllipse.stroke = ellipse.mov.stroke;
     newEllipse.fill = ellipse.mov.fill;
     newEllipse.angle = ellipse.angle;
     return newEllipse;
 }
-function loadRectangle(rect) {
+function loadRectangle(rect: RectangleJSON): Rectangle {
     const newFur = new Rectangle(rect.name, rect.mov.type, rect.p.x, rect.p.y, 100, 100);
     newFur.dims = rect.dims;
     newFur.angle = rect.angle;
@@ -33,80 +34,89 @@ function loadRectangle(rect) {
     newFur.fill = rect.mov.fill;
     return newFur;
 }
-function createState() {
+
+function createState(): string {
     return JSON.stringify({ graph, labels, openables, furniture, floorplanImage }, null, "");
 }
 function setState() {
     state = createState();
 }
-function loadFloorplan(content, fileName) {
+
+function loadFloorplan(content: string, fileName: string) {
     let floorPlanner;
     try {
         floorPlanner = JSON.parse(content);
-    }
-    catch (err) {
+    } catch (err) {
         alert(getText(loc.fileIO.errorAtFile) + " " + fileName + ".\n\n" + getText(loc.fileIO.errorMessage) + "\n" + err);
         console.error(err);
         return;
     }
+
     graph.reset();
     labels.length = 0;
     openables.length = 0;
     furniture.length = 0;
     floorplanImage.reset();
+
     if (floorPlanner.graph) {
         let maxId = -1;
         for (const id in floorPlanner.graph.nodes) {
-            const node = floorPlanner.graph.nodes[id];
+            const node = floorPlanner.graph.nodes[id] as CornerJSON;
             if (maxId < node.id) {
                 maxId = node.id;
             }
             graph.nodes[node.id] = new CornerNode(node.id, node.p.x, node.p.y);
         }
         graph.count = maxId + 1;
+
         for (const i in floorPlanner.graph.edges) {
             for (const j in floorPlanner.graph.edges[i]) {
-                const edge = floorPlanner.graph.edges[i][j];
+                const edge = floorPlanner.graph.edges[i][j] as EdgeJSON;
                 graph.addEdge(edge.id1, edge.id2);
             }
         }
     }
+
     if (floorPlanner.labels) {
         for (const label of floorPlanner.labels) {
-            labels.push(loadRectangle(label));
+            labels.push(loadRectangle(label as RectangleJSON));
         }
     }
+
     if (floorPlanner.openables) {
         for (const openable of floorPlanner.openables) {
-            openables.push(loadOpenable(openable, graph));
+            openables.push(loadOpenable(openable as OpenableJSON, graph));
         }
     }
+
     if (floorPlanner.furniture) {
         for (const fur of floorPlanner.furniture) {
             switch (fur.mov.type) {
                 case MovableType.Circle: {
-                    furniture.push(loadCircle(fur));
+                    furniture.push(loadCircle(fur as CircleJSON));
                     break;
                 }
                 case MovableType.Ellipse: {
-                    furniture.push(loadEllipse(fur));
+                    furniture.push(loadEllipse(fur as EllipseJSON));
                     break;
                 }
                 case MovableType.Rectangle:
                 case MovableType.L:
                 case MovableType.U: {
-                    furniture.push(loadRectangle(fur));
+                    furniture.push(loadRectangle(fur as RectangleJSON));
                     break;
                 }
             }
         }
     }
+
     if (floorPlanner.floorplanImage && floorPlanner.floorplanImage.image) {
-        const floorplanImageJson = floorPlanner.floorplanImage;
+        const floorplanImageJson = floorPlanner.floorplanImage as FloorplanImageJSON;
         const img = new Image();
         img.onload = (onLoadResult) => {
-            const image = onLoadResult.target;
+            const image = onLoadResult.target as HTMLImageElement;
             floorplanImage.image = image;
+
             setState();
             drawMain();
         };
@@ -114,67 +124,91 @@ function loadFloorplan(content, fileName) {
             alert(getText(loc.fileIO.errorAtFile) + ".");
         };
         img.src = floorplanImageJson.image;
+
         floorplanImage.distance = floorplanImageJson.distance;
+
         const node1 = floorplanImageJson.node1;
         floorplanImage.node1 = new CornerNode(node1.id, node1.p.x, node1.p.y);
+
         const node2 = floorplanImageJson.node2;
         floorplanImage.node2 = new CornerNode(node2.id, node2.p.x, node2.p.y);
     }
+
     setState();
+
     drawMain();
 }
-function loadRemoteExample(url) {
+
+function loadRemoteExample(url: string) {
     let gitHubExampleRequest = new XMLHttpRequest();
     gitHubExampleRequest.onload = readerEvent => {
         const target = readerEvent.currentTarget;
         if (target) {
-            const content = target.response;
+            const content = (target as XMLHttpRequest).response;
             loadFloorplan(content, url);
+
             centerProjection();
         }
-    };
+    }
     gitHubExampleRequest.open("GET", url);
     gitHubExampleRequest.send();
 }
-document.getElementById("loadInput").addEventListener("change", (e) => {
-    const files = e.target.files;
+
+document.getElementById("loadInput")!.addEventListener("change", (e: Event) => {
+    const files = (e.target as HTMLInputElement).files;
     const file = files?.item(0);
+
     if (!file) {
         return;
     }
+
     const reader = new FileReader();
     reader.readAsText(file, "UTF-8");
+
     reader.onload = readerEvent => {
         const target = readerEvent.target;
         if (target) {
-            const content = target.result;
-            loadFloorplan(content, file.name);
+            const content = target.result as string;
+            loadFloorplan(content, file.name)
         }
     };
 });
-document.getElementById("saveButton").addEventListener("click", () => {
+
+document.getElementById("saveButton")!.addEventListener("click", () => {
     const pom = document.createElement("a");
     pom.setAttribute("href", "data:text/plain;charset=utf-8," +
         encodeURIComponent(JSON.stringify({ graph, labels, openables, furniture, floorplanImage }, null, " ")));
+
     pom.setAttribute("download", "house.json");
+
     pom.style.display = "none";
     document.body.appendChild(pom);
+
     pom.click();
+
     document.body.removeChild(pom);
+
     // TODO: this is too optimistic, cancel might have been selected
     setState();
 });
-document.getElementById("exportButton").addEventListener("click", () => {
+
+document.getElementById("exportButton")!.addEventListener("click", () => {
     const pom = document.createElement("a");
     pom.setAttribute("href", canvas.toDataURL());
+
     pom.setAttribute("download", "house.png");
+
     pom.style.display = "none";
     document.body.appendChild(pom);
+
     pom.click();
+
     document.body.removeChild(pom);
 });
-document.getElementById("printButton").addEventListener("click", () => {
+
+document.getElementById("printButton")!.addEventListener("click", () => {
     const dataUrl = canvas.toDataURL();
+
     let content = "<!DOCTYPE html>";
     content += "<html>";
     content += "<head><title>PenAndPaperFloorplanner</title></head>";
@@ -182,10 +216,12 @@ document.getElementById("printButton").addEventListener("click", () => {
     content += "<img src=\"" + dataUrl + "\"";
     content += "</body>";
     content += "</html>";
+
     const printWin = window.open("", "", "width=" + screen.availWidth + ",height=" + screen.availHeight);
     if (printWin !== null) {
         printWin.document.open();
         printWin.document.write(content);
+
         printWin.document.addEventListener('load', function () {
             printWin.focus();
             printWin.print();
@@ -194,11 +230,13 @@ document.getElementById("printButton").addEventListener("click", () => {
         }, true);
     }
 });
-document.getElementById("helpOpen").addEventListener("click", () => {
-    const helpDialog = document.getElementById("helpDialog");
+
+document.getElementById("helpOpen")!.addEventListener("click", () => {
+    const helpDialog = document.getElementById("helpDialog") as HTMLDialogElement;
     helpDialog.showModal();
 });
-document.getElementById("helpClose").addEventListener("click", () => {
-    const helpDialog = document.getElementById("helpDialog");
+
+document.getElementById("helpClose")!.addEventListener("click", () => {
+    const helpDialog = document.getElementById("helpDialog") as HTMLDialogElement;
     helpDialog.close();
 });

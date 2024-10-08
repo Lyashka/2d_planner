@@ -6,7 +6,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 
-import categoryList from '/planner2d/src/planner2d.js';
+import categoryList from '/planner2d/src/planner2d.ts';
 import VueKonva from 'vue-konva';
 
 

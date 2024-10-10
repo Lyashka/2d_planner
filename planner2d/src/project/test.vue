@@ -7,18 +7,18 @@
       <canvas id="canvas">Your browser does not support the HTML 5 Canvas.</canvas>
 
       <div class="navBar">
-        <button type="button" id="navZoomIn" class="navBarButton">⊕</button>
-        <button type="button" id="navCenter" class="navBarButton">⊚</button>
-        <button type="button" id="navZoomOut" class="navBarButton">⊖</button>
+        <button type="button" id="navZoomIn" class="navBarButton" @click="navZoomIn">⊕</button>
+        <button type="button" id="navCenter" class="navBarButton" @click="navCenter">⊚</button>
+        <button type="button" id="navZoomOut" class="navBarButton" @click="navZoomOut">⊖</button>
       </div>
 
       <div class="navBar translate">
-        <button type="button" id="navUp" class="navBarButton">⮉</button>
+        <button type="button" id="navUp" class="navBarButton" @click="navUp">⮉</button>
         <div class="subBar">
-          <button type="button" id="navLeft" class="navBarButton">⮈</button>
-          <button type="button" id="navRight" class="navBarButton">⮊</button>
+          <button type="button" id="navLeft" class="navBarButton" @click="navLeft">⮈</button>
+          <button type="button" id="navRight" class="navBarButton" @click="navRight">⮊</button>
         </div>
-        <button type="button" id="navDown" class="navBarButton">⮋</button>
+        <button type="button" id="navDown" class="navBarButton" @click="navDown">⮋</button>
       </div>
 
 
@@ -28,13 +28,12 @@
       <div id="sidebar">
 
         <div class="tab mode buttonRow">
-          <button type="button" id="floorplanButton" class="tabLinks mode" @click="changeToFloorplanMode">floorplan</button>
+<!--          <button type="button" id="floorplanButton" class="tabLinks mode" @click="changeToFloorplanMode">floorplan</button>-->
           <button type="button" id="roomButton" class="tabLinks mode" @click="changeToRoomMode">room</button>
           <button type="button" id="furnitureButton" class="tabLinks mode" @click="changeToFurnitureMode">furniture</button>
           <button type="button" id="presentationButton" class="tabLinks mode" @click="changeToPresentationMode">presentation</button>
         </div>
 
-<!--        <div :class="floorplanTab" class="tabContent mode">-->
           <table>
             <tbody>
             <tr>
@@ -56,103 +55,9 @@
             </tr>
             </tbody>
           </table>
-<!--        </div>-->
 
-<!--        <div :class="roomTab" class="tabContent mode">-->
-<!--          <div>-->
-<!--            <label id="nodeTransSliderLabel" for="nodeTransSlider"></label>-->
-<!--            <input type="range" id="nodeTransSlider" class="w100pc" min="5" max="750" :value="nodeTransSlider" @input="setNodeTransSize">-->
-<!--            <label id="nodeExtendSliderLabel" for="nodeExtendSlider"></label>-->
-<!--            <input type="range" id="nodeExtendSlider" class="w100pc" min="5" max="750" :value="nodeExtendSlider" @input="setNodeExtendSize">-->
-<!--            <label id="labelNameInputLabel" for="labelNameInput"></label>-->
-<!--            <input id="labelNameInput" value="Livingroom" class="w100pc">-->
-<!--            <label id="labelHeightInputLabel" for="labelHeightInput"></label>-->
-<!--            <input type="number" id="labelHeightInput" class="w100pc" min="1" value="1000" required="">-->
-<!--            <button id="addLabelButton" class="addButton"></button>-->
-<!--            <label id="openableWidthInputLabel" for="openableWidthInput"></label>-->
-<!--            <input type="number" id="openableWidthInput" class="w100pc" min="1" value="1000" required="">-->
-<!--            <label id="openableTypeInputLabel" for="leftOpenableButton"></label>-->
-<!--            <button type="button" id="leftOpenableButton" class="tabLinks openableType" @click="changeToLeftOpenableType" >L</button>-->
-<!--            <button type="button" id="rightOpenableButton" class="tabLinks openableType" @click="changeToRightOpenableType" >R</button>-->
-<!--            <button type="button" id="doubleOpenableButton" class="tabLinks openableType" @click="changeToDoubleOpenableType">D</button>-->
-<!--            <button id="addOpenableButton" class="addButton"></button>-->
-<!--          </div>-->
-<!--          <table>-->
-<!--            <tbody>-->
-<!--            <tr>-->
-<!--              <th id="cornerHead" colspan="2"></th>-->
-<!--            </tr>-->
-<!--            <tr>-->
-<!--              <td>-->
-<!--                <label id="nodeTransSliderLabel" for="nodeTransSlider"></label>-->
-<!--          </td>-->
-<!--              <td class="inputTD">-->
-<!--                <input type="range" id="nodeTransSlider" class="w100pc" min="5" max="750" :value="nodeTransSlider" @input="setNodeTransSize">-->
-<!--              </td>-->
-<!--            </tr>-->
-<!--            <tr>-->
-<!--              <td>-->
-<!--                <label id="nodeExtendSliderLabel" for="nodeExtendSlider"></label>-->
-<!--          </td>-->
-<!--              <td class="inputTD">-->
-<!--                <input type="range" id="nodeExtendSlider" class="w100pc" min="5" max="750" :value="nodeExtendSlider" @input="setNodeExtendSize">-->
-<!--              </td>-->
-<!--            </tr>-->
-<!--            <tr>-->
-<!--              <th id="labelHead" colspan="2"></th>-->
-<!--            </tr>-->
-<!--            <tr>-->
-<!--              <td>-->
-<!--                <label id="labelNameInputLabel" for="labelNameInput"></label>-->
-<!--          </td>-->
-<!--              <td class="inputTD">-->
-<!--                <input id="labelNameInput" value="Livingroom" class="w100pc">-->
-<!--              </td>-->
-<!--            </tr>-->
-<!--            <tr>-->
-<!--              <td>-->
-<!--                <label id="labelHeightInputLabel" for="labelHeightInput"></label>-->
-<!--              </td>-->
-<!--              <td class="inputTD">-->
-<!--                <input type="number" id="labelHeightInput" class="w100pc" min="1" value="1000" required="">-->
-<!--              </td>-->
-<!--            </tr>-->
-<!--            <tr>-->
-<!--              <td colspan="2">-->
-<!--                <button id="addLabelButton" class="addButton"></button>-->
-<!--              </td>-->
-<!--            </tr>-->
-<!--            <tr>-->
-<!--              <th id="openableHead" colspan="2"></th>-->
-<!--            </tr>-->
-<!--            <tr>-->
-<!--              <td>-->
-<!--                <label id="openableWidthInputLabel" for="openableWidthInput"></label>-->
-<!--          </td>-->
-<!--              <td class="inputTD">-->
-<!--                <input type="number" id="openableWidthInput" class="w100pc" min="1" value="1000" required="">-->
-<!--              </td>-->
-<!--            </tr>-->
-<!--            <tr>-->
-<!--              <td>-->
-<!--                <label id="openableTypeInputLabel" for="leftOpenableButton"></label>-->
-<!--          </td>-->
-<!--              <td class="tab openableType buttonRow">-->
-<!--                <button type="button" id="leftOpenableButton" class="tabLinks openableType" @click="changeToLeftOpenableType" >L</button>-->
-<!--                <button type="button" id="rightOpenableButton" class="tabLinks openableType" @click="changeToRightOpenableType" >R</button>-->
-<!--                <button type="button" id="doubleOpenableButton" class="tabLinks openableType" @click="changeToDoubleOpenableType">D</button>-->
-<!--              </td>-->
-<!--            </tr>-->
-<!--            <tr>-->
-<!--              <td colspan="2">-->
-<!--                <button id="addOpenableButton" class="addButton"></button>-->
-<!--              </td>-->
-<!--            </tr>-->
-<!--            </tbody>-->
-<!--          </table>-->
-<!--        </div>-->
 
-<!--        <div :class="furnitureTab" class="tabContent mode">-->
+
           <table>
             <tbody>
             <tr>
@@ -170,7 +75,6 @@
                 <button type="button" id="UButton" class="tabLinks furnitureType" @click="changeToUType">╔╗</button>
               </td>
             </tr>
-<!--            <tbody id="circleTab" class="tabContent furnitureType">-->
             <tr>
               <td><label id="circleWidthInputLabel" for="circleWidthInput">Круг</label></td>
               <td class="inputTD">
@@ -221,30 +125,22 @@
             </tr>
             </tbody>
           </table>
-<!--        </div>-->
 
-<!--        <div :class="presentationTab" class="tabContent mode">-->
-         <input type="checkbox" id="edgeLabelCheckbox" class="checkboxClass" v-model="edgeLabelCheckbox">
-            <label id="edgeLabelCheckboxLabel" for="edgeLabelCheckbox"></label>
+<!--         Чекбоксы и кнопки СОХРАНИТЬ, ЗАГРУЗИТЬ, ЭКСПОРТ, ПРИНТ-->
+        <div style="display: flex; flex-direction: column">
+          <label for="edgeLabelCheckbox">Длины стен</label>
+          <input type="checkbox" id="edgeLabelCheckbox" class="checkboxClass" v-model="edgeLabelCheckbox" @input="edgeLabelCheckboxInput">
 
-          <input type="checkbox" id="roomSizeCheckbox" class="checkboxClass" v-model="roomSizeCheckbox">
-            <label id="roomSizeCheckboxLabel" for="roomSizeCheckbox"></label>
-
-<!--        </div>-->
-
-<!--        <div class="buttonRow bottomMenu">-->
-          <button type="button" id="saveButton">save</button>
-
-          <div>
-            <label id="loadButton" class="loadInputClass" for="loadInput">load</label>
-            <input type="file" id="loadInput" class="loadFileClass" >
-          </div>
-
-
-          <button type="button" id="exportButton">export</button>
-          <button type="button" id="printButton">print</button>
+          <label for="roomSizeCheckbox">Квадратные метры помещения</label>
+          <input type="checkbox" id="roomSizeCheckbox" class="checkboxClass" v-model="roomSizeCheckbox" @input="roomSizeCheckboxInput">
+          <button type="button" id="saveButton" @click="saveButton">save</button>
+          <label id="loadButton" class="loadInputClass" for="loadInput">load</label>
+          <input type="file" id="loadInput" class="loadFileClass" @input="loadInput">
+          <button type="button" id="exportButton" @click="exportButton">export</button>
+          <button type="button" id="printButton" @click="printButton">print</button>
         </div>
-<!--      </div>-->
+
+        </div>
 
 
       <div>
@@ -271,7 +167,6 @@
         <button type="button" id="doubleOpenableButton" class="tabLinks openableType" @click="changeToDoubleOpenableType">D</button>
         <button id="addOpenableButton" class="addButton" @click="addOpenableButton"> add </button>
       </div>
-
 
 
     </div>
@@ -493,61 +388,9 @@ function drawHelp() {
   }
   ctx.value.stroke();
 
-  // {// find help
-  //   const helpRect = (document.getElementById("helpOpen") as HTMLButtonElement).getBoundingClientRect();
-  //   const helpAnchor = proj.to({ x: helpRect.x, y: helpRect.y + helpRect.height / 2 });
-  //
-  //   ctx.value.beginPath();
-  //   setFontSize(30, false);
-  //   ctx.value.fillStyle = "green";
-  //   ctx.value.textAlign = "right";
-  //   ctx.value.textBaseline = "middle";
-  //   ctx.value.fillText(getText(loc.help.findHelp), helpAnchor.x, helpAnchor.y);
-  //   ctx.value.stroke();
-  // }
-
-  // {// navigation help
-  //   const navRect = (document.getElementById("navLeft") as HTMLButtonElement).getBoundingClientRect();
-  //   const navAnchor = proj.to({ x: navRect.x, y: navRect.y + navRect.height / 2 });
-  //
-  //   ctx.value.beginPath();
-  //   setFontSize(20, false);
-  //   ctx.value.fillStyle = "blue";
-  //   ctx.value.textAlign = "right";
-  //   ctx.value.textBaseline = "middle";
-  //   ctx.value.fillText(getText(loc.help.findNav), navAnchor.x, navAnchor.y);
-  //   ctx.value.stroke();
-  // }
-
-  {// remove help
-    const a = proj.to({ x: canvas.value.width - settings.value.deleteDim.w, y: 0 });
-    const d = proj.to({ x: canvas.value.width, y: settings.value.deleteDim.h });
-
-    const w = d.x - a.x;
-    const h = d.y - a.y;
-
-    ctx.value.beginPath();
-    ctx.value.fillStyle = "red";
-    setFontSize(20, false);
-    ctx.value.textAlign = "right";
-    ctx.value.textBaseline = "top";
-
-    switch (settings.value.mode) {
-      case Mode.Floorplan:
-        break;
-      case Mode.Room:
-        ctx.value.fillText(getText(loc.room.removeHelp), br.x - w, ul.y + h);
-        break;
-      case Mode.Furniture:
-        ctx.value.fillText(getText(loc.furniture.removeHelp), br.x - w, ul.y + h);
-        break;
-      case Mode.Presentation:
-        break;
-    }
-    ctx.value.stroke();
-  }
   restoreDefaultContext();
 }
+
 
 function drawLabel(label: Rectangle) {
   ctx.value.save();
@@ -628,71 +471,71 @@ function drawDeletionField() {
     return;
   }
 
-  const a = projection.to({ x: canvas.value.width - settings.value.deleteDim.w, y: 0 });
-  const d = projection.to({ x: canvas.value.width, y: settings.value.deleteDim.h });
+  const a = projection.to({ x: canvas.value.width - settings.value.deleteDim.w, y: 0 })
+  const d = projection.to({ x: canvas.value.width, y: settings.value.deleteDim.h })
 
-  ctx.value.lineJoin = "round";
-  ctx.value.strokeStyle = "red";
+  ctx.value.lineJoin = "round"
+  ctx.value.strokeStyle = "red"
 
-  ctx.value.beginPath();
-  ctx.value.rect(a.x, a.y, d.x - a.x, d.y - a.y);
-  ctx.value.stroke();
+  ctx.value.beginPath()
+  ctx.value.rect(a.x, a.y, d.x - a.x, d.y - a.y)
+  ctx.value.stroke()
 
-  const w = d.x - a.x;
-  const h = d.y - a.y;
+  const w = d.x - a.x
+  const h = d.y - a.y
 
   // body
-  ctx.value.beginPath();
-  ctx.value.moveTo(a.x + .2 * w, a.y + .3 * h);
-  ctx.value.lineTo(a.x + .25 * w, a.y + .93 * h);
-  ctx.value.lineTo(a.x + .75 * w, a.y + .93 * h);
-  ctx.value.lineTo(a.x + .8 * w, a.y + .3 * h);
-  ctx.value.closePath();
-  ctx.value.stroke();
+  ctx.value.beginPath()
+  ctx.value.moveTo(a.x + .2 * w, a.y + .3 * h)
+  ctx.value.lineTo(a.x + .25 * w, a.y + .93 * h)
+  ctx.value.lineTo(a.x + .75 * w, a.y + .93 * h)
+  ctx.value.lineTo(a.x + .8 * w, a.y + .3 * h)
+  ctx.value.closePath()
+  ctx.value.stroke()
 
   // stripes
   for (const i of [.375, .5, .625]) {
-    ctx.value.beginPath();
-    ctx.value.rect(a.x + (i - .03) * w, a.y + .38 * h, .06 * w, .47 * h);
-    ctx.value.stroke();
+    ctx.value.beginPath()
+    ctx.value.rect(a.x + (i - .03) * w, a.y + .38 * h, .06 * w, .47 * h)
+    ctx.value.stroke()
   }
 
   if (!settings.value.isRemove) {
     // head
-    ctx.value.beginPath();
-    ctx.value.rect(a.x + .15 * w, a.y + .15 * h, .7 * w, .1 * h);
-    ctx.value.stroke();
+    ctx.value.beginPath()
+    ctx.value.rect(a.x + .15 * w, a.y + .15 * h, .7 * w, .1 * h)
+    ctx.value.stroke()
 
     // handle
-    ctx.value.beginPath();
-    ctx.value.rect(a.x + .4 * w, a.y + .07 * h, .2 * w, .06 * h);
-    ctx.value.stroke();
+    ctx.value.beginPath()
+    ctx.value.rect(a.x + .4 * w, a.y + .07 * h, .2 * w, .06 * h)
+    ctx.value.stroke()
   }
-  restoreDefaultContext();
+  restoreDefaultContext()
 }
 
 function drawDistanceToNextWall(center: Point, border: Point) {
-  const intersectionPoint = graph.nextEdgeToSegment(center, border);
+  const intersectionPoint = graph.nextEdgeToSegment(center, border)
   if (intersectionPoint !== null) {
-    ctx.value.beginPath();
-    ctx.value.moveTo(border.x, border.y);
-    ctx.value.lineTo(intersectionPoint.x, intersectionPoint.y);
-    ctx.value.stroke();
+    ctx.value.beginPath()
+    ctx.value.moveTo(border.x, border.y)
+    ctx.value.lineTo(intersectionPoint.x, intersectionPoint.y)
+    ctx.value.stroke()
 
-    const dist = distance(border, intersectionPoint);
+    const dist = distance(border, intersectionPoint)
 
-    ctx.value.save();
+    ctx.value.save()
 
-    ctx.value.translate((border.x + intersectionPoint.x) / 2, (border.y + intersectionPoint.y) / 2);
-    const angle = Math.atan2(border.y - intersectionPoint.y, border.x - intersectionPoint.x);
+    ctx.value.translate((border.x + intersectionPoint.x) / 2, (border.y + intersectionPoint.y) / 2)
+    const angle = Math.atan2(border.y - intersectionPoint.y, border.x - intersectionPoint.x)
 
-    ctx.value.rotate(angle < -Math.PI / 2 || angle > Math.PI / 2 ? angle + Math.PI : angle);
+    ctx.value.rotate(angle < -Math.PI / 2 || angle > Math.PI / 2 ? angle + Math.PI : angle)
 
-    ctx.value.beginPath();
-    drawDistance(0, 0, dist, 0, "mm");
-    ctx.value.stroke();
+    ctx.value.beginPath()
+    drawDistance(0, 0, dist, 0, "mm")
+    ctx.value.stroke()
 
-    ctx.value.restore();
+    ctx.value.restore()
   }
 }
 
@@ -1459,17 +1302,10 @@ function addFurnitureButton() {
 //   return true;
 // });
 //
-// document.getElementById("edgeLabelCheckbox")!.addEventListener("change", (e) => {
-//   settings.value.showEdgeLabels = (e.target as HTMLInputElement).checked;
+
+
 //
-//   drawMain();
-// });
-//
-// document.getElementById("roomSizeCheckbox")!.addEventListener("change", (e) => {
-//   settings.value.showRoomSize = (e.target as HTMLInputElement).checked;
-//
-//   drawMain();
-// });
+
 
 
 
@@ -2486,6 +2322,17 @@ function setNodeExtendSize() {
 const edgeLabelCheckbox = ref(false)
 const roomSizeCheckbox = ref(false)
 
+//Checkbox показывать/не показывать длины стен
+function edgeLabelCheckboxInput() {
+  settings.value.showEdgeLabels = !edgeLabelCheckbox.value
+  drawMain();
+}
+
+function roomSizeCheckboxInput() {
+  settings.value.showRoomSize = !roomSizeCheckbox.value
+  drawMain();
+}
+
 function resetOptions() {
   settings.value.showEdgeLabels = false;
   edgeLabelCheckbox.value = false
@@ -2516,116 +2363,7 @@ function addListEntry(parent: HTMLElement, type: string, head: Localization, sho
   return headElem;
 }
 
-function addAttr(elem: HTMLElement, attr: { [key: string]: string }): HTMLElement {
-  for (const [key, value] of Object.entries(attr)) {
-    elem.setAttribute(key, value);
-  }
-  return elem;
-}
 
-// function setButtonContent() {
-//   // floorplan
-//   document.getElementById("floorplanButton")!.textContent = getText(loc.floorplan.category);
-//
-//   document.getElementById("distanceInputLabel")!.textContent = getText(loc.floorplan.option.distance);
-//   document.getElementById("loadFloorplanButton")!.textContent = getText(loc.floorplan.loadButton);
-//   document.getElementById("clearFloorplanButton")!.textContent = getText(loc.floorplan.clearButton);
-//
-//   // room
-//   document.getElementById("roomButton")!.textContent = getText(loc.room.category);
-//
-//   // corner node
-//   document.getElementById("cornerHead")!.textContent = getText(loc.room.corner.head);
-//   document.getElementById("nodeTransSliderLabel")!.textContent = getText(loc.room.corner.center);
-//   document.getElementById("nodeExtendSliderLabel")!.textContent = getText(loc.room.corner.ring);
-//
-//   // label
-//   document.getElementById("labelHead")!.textContent = getText(loc.room.label.head);
-//   document.getElementById("labelNameInputLabel")!.textContent = getText(loc.room.label.name);
-//   (document.getElementById("labelNameInput") as HTMLInputElement).value = getText(loc.room.label.defaultName);
-//   document.getElementById("labelHeightInputLabel")!.textContent = getText(loc.room.label.height);
-//   document.getElementById("addLabelButton")!.textContent = getText(loc.room.label.add);
-//
-//   // openable
-//   document.getElementById("openableHead")!.textContent = getText(loc.room.openable.head);
-//   document.getElementById("openableWidthInputLabel")!.textContent = getText(loc.room.openable.width);
-//
-//   document.getElementById("openableTypeInputLabel")!.textContent = getText(loc.room.openable.type);
-//
-//   document.getElementById("addOpenableButton")!.textContent = getText(loc.room.openable.add);
-//
-//   // furniture
-//   document.getElementById("furnitureButton")!.textContent = getText(loc.furniture.category);
-//
-//   document.getElementById("nameInputLabel")!.textContent = getText(loc.furniture.add.name);
-//   (document.getElementById("nameInput") as HTMLInputElement).value = getText(loc.furniture.add.defaultName);
-//
-//   document.getElementById("typeInputLabel")!.textContent = getText(loc.furniture.add.type);
-//
-//   document.getElementById("widthInputLabel")!.textContent = getText(loc.furniture.add.width);
-//   document.getElementById("heightInputLabel")!.textContent = getText(loc.furniture.add.height);
-//
-//   document.getElementById("circleWidthInputLabel")!.textContent = getText(loc.furniture.add.width);
-//   document.getElementById("circleHeightInputLabel")!.textContent = getText(loc.furniture.add.height);
-//
-//   document.getElementById("LWidthInputLabel")!.textContent = getText(loc.furniture.add.width);
-//   document.getElementById("LHeightInputLabel")!.textContent = getText(loc.furniture.add.height);
-//
-//   document.getElementById("UWidthInputLabel")!.textContent = getText(loc.furniture.add.width);
-//   document.getElementById("UHeightInputLabel")!.textContent = getText(loc.furniture.add.height);
-//
-//   document.getElementById("addFurnitureButton")!.textContent = getText(loc.furniture.add.add);
-//
-//   // presentation
-//   document.getElementById("presentationButton")!.textContent = getText(loc.presentation.category);
-//
-//   document.getElementById("presentationOptionsHead")!.textContent = getText(loc.presentation.option.head);
-//   document.getElementById("edgeLabelCheckboxLabel")!.textContent = getText(loc.presentation.option.showEdgeLabel);
-//   document.getElementById("roomSizeCheckboxLabel")!.textContent = getText(loc.presentation.option.roomSizeLabel);
-//
-//   // util
-//   document.getElementById("saveButton")!.textContent = getText(loc.fileIO.saveButton);
-//   document.getElementById("loadButton")!.textContent = getText(loc.fileIO.loadButton);
-//   document.getElementById("exportButton")!.textContent = getText(loc.fileIO.exportButton);
-//   document.getElementById("printButton")!.textContent = getText(loc.fileIO.printButton);
-//   document.getElementById("helpOpen")!.textContent = getText(loc.help.helpOpen);
-//
-//   // help
-//   const helpText = document.getElementById("helpText") as HTMLDivElement;
-//
-//   addElem(helpText, "h2", loc.help.welcome);
-//   addElem(helpText, "p", loc.help.intro);
-//
-//   addElem(helpText, "p", loc.help.explanationMode);
-//   const modeList: HTMLUListElement = addElem(helpText, "ul") as HTMLUListElement;
-//   addAttr(addListEntry(modeList, "li", loc.help.introFloorplan, loc.help.shortFloorplan), { "class": "helpLink" }).addEventListener("click", clickFloorplan);
-//   addAttr(addListEntry(modeList, "li", loc.help.introRoom, loc.help.shortRoom), { "class": "helpLink" }).addEventListener("click", clickRoom);
-//   addAttr(addListEntry(modeList, "li", loc.help.introFurniture, loc.help.shortFurniture), { "class": "helpLink" }).addEventListener("click", clickFurniture);
-//   addAttr(addListEntry(modeList, "li", loc.help.introDisplay, loc.help.shortDisplay), { "class": "helpLink" }).addEventListener("click", clickDisplay);
-//
-//   addElem(helpText, "p", loc.help.explanationUtil);
-//   const utilList: HTMLUListElement = addElem(helpText, "ul") as HTMLUListElement;
-//   addListEntry(utilList, "li", loc.fileIO.saveButton, loc.fileIO.saveShort);
-//   addListEntry(utilList, "li", loc.fileIO.loadButton, loc.fileIO.loadShort);
-//   addListEntry(utilList, "li", loc.fileIO.exportButton, loc.fileIO.exportShort);
-//   addListEntry(utilList, "li", loc.fileIO.printButton, loc.fileIO.printShort);
-//
-//   addAttr(addElem(helpText, "h3", loc.help.introFloorplan), { "class": "helpLink" }).addEventListener("click", clickFloorplan);
-//   addElem(helpText, "p", loc.help.explanationFloorplan);
-//
-//   addAttr(addElem(helpText, "h3", loc.help.introRoom), { "class": "helpLink" }).addEventListener("click", clickRoom);
-//   addElem(helpText, "p", loc.help.explanationRoom);
-//
-//   addAttr(addElem(helpText, "h3", loc.help.introFurniture), { "class": "helpLink" }).addEventListener("click", clickFurniture);
-//   addElem(helpText, "p", loc.help.explanationFurniture);
-//
-//   addAttr(addElem(helpText, "h3", loc.help.introDisplay), { "class": "helpLink" }).addEventListener("click", clickDisplay);
-//   addElem(helpText, "p", loc.help.explanationDisplay);
-//
-//   addElem(addElem(helpText, "p"), "b", loc.help.creator);
-//
-//   document.getElementById("helpClose")!.textContent = getText(loc.help.helpClose);
-// }
 window.addEventListener("resize", setSize);
 
 function setSize() {
@@ -2635,59 +2373,9 @@ function setSize() {
   drawMain();
 }
 
-// function welcome() {
-//   let message = "";
-//   message += "\n _____                              _ _____                      ______ _                        _                                            ";
-//   message += "\n|  __ \\             /\\             | |  __ \\                    |  ____| |                      | |                                        ";
-//   message += "\n| |__) |__ _ __    /  \\   _ __   __| | |__) |_ _ _ __   ___ _ __| |__  | | ___   ___  _ __ _ __ | | __ _ _ __  _ __   ___ _ __               ";
-//   message += "\n|  ___/ _ \\ '_ \\  / /\\ \\ | '_ \\ / _` |  ___/ _` | '_ \\ / _ \\ '__|  __| | |/ _ \\ / _ \\| '__| '_ \\| |/ _` | '_ \\| '_ \\ / _ \\ '__|  ";
-//   message += "\n| |  |  __/ | | |/ ____ \\| | | | (_| | |  | (_| | |_) |  __/ |  | |    | | (_) | (_) | |  | |_) | | (_| | | | | | | |  __/ |                 ";
-//   message += "\n|_|   \\___|_| |_/_/    \\_\\_| |_|\\__,_|_|   \\__,_| .__/ \\___|_|  |_|    |_|\\___/ \\___/|_|  | .__/|_|\\__,_|_| |_|_| |_|\\___|_|        ";
-//   message += "\n                                                | |                                       | |                                                 ";
-//   message += "\n                                                |_|                                       |_|                                                 ";
-//   message += "\n";
-//   message += "\nReport issues: https://github.com/karldaeubel/PenAndPaperFloorplanner/issues/new";
-//   message += "\nFork:          https://github.com/karldaeubel/PenAndPaperFloorplanner/fork";
-//   message += "\n";
-//
-//   console.log(message);
-// }
-// init();
-
-// function init() {
-//   welcome();
-//
-//   if (navigator.language) {
-//     settings.value.language = navigator.language.substring(0, 2);
-//   }
-//   console.log("language:", settings.value.language);
-//
-//   // document.getElementById("distanceInput")!.dispatchEvent(new Event("input"));
-//
-//   // document.getElementById("leftOpenableButton")!.click();
-//   //
-//   // document.getElementById("circleButton")!.click();
-//
-//   initNodeSize();
-//
-//   setButtonContent();
-//
-//   setState();
-//
-//   setSize();
-//
-//   resetOptions();
-// }
-
-
-
 function touchToCoordinates(t: Touch): Point {
   return { x: t.clientX, y: t.clientY };
 }
-
-
-
-
 
 function zoomEvent(e: WheelEvent) {
   zoom(e, e.deltaY > 0 ? 1 / settings.value.zoomFactor : e.deltaY < 0 ? settings.value.zoomFactor : null);
@@ -3969,10 +3657,6 @@ class Ellipse extends Movable {
 }
 
 
-
-
-
-
 function toNextNumber(p: Point): Point {
   return { x: Math.round(p.x), y: Math.round(p.y) };
 }
@@ -4030,9 +3714,110 @@ function getTrapezoidArea(p1: Point, p2: Point): number {
   return (p1.x - p2.x) * (p1.y + p2.y) / 2;
 }
 
+function navZoomIn() {
+  zoomToMiddle(Math.pow(settings.value.zoomFactor, 4))
+}
+
+function navZoomOut() {
+  zoomToMiddle(1 / Math.pow(settings.value.zoomFactor, 4))
+}
+
+function navCenter() {
+  centerProjection()
+}
+
+function navUp() {
+  moveProjection(Direction.Up)
+}
+
+function navRight() {
+  moveProjection(Direction.Right)
+}
+
+function navDown() {
+  moveProjection(Direction.Down)
+}
+
+function navLeft() {
+  moveProjection(Direction.Left)
+}
 
 
+function loadInput(e) {
+  const files = (e.target as HTMLInputElement).files;
+  const file = files?.item(0);
 
+  if (!file) {
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.readAsText(file, "UTF-8");
+
+  reader.onload = readerEvent => {
+    const target = readerEvent.target;
+    if (target) {
+      const content = target.result as string;
+      loadFloorplan(content, file.name)
+    }
+  };
+}
+
+function saveButton() {
+  const pom = document.createElement("a")
+  pom.setAttribute("href", "data:text/plain;charset=utf-8," +
+    encodeURIComponent(JSON.stringify({ graph, labels, openables, furniture, floorplanImage }, null, " ")))
+
+  pom.setAttribute("download", "house.json")
+
+  pom.style.display = "none"
+  document.body.appendChild(pom)
+
+  pom.click();
+
+  document.body.removeChild(pom)
+
+  setState()
+}
+
+function exportButton() {
+  const pom = document.createElement("a")
+  pom.setAttribute("href", canvas.value.toDataURL())
+
+  pom.setAttribute("download", "house.png")
+
+  pom.style.display = "none"
+  document.body.appendChild(pom)
+
+  pom.click()
+
+  document.body.removeChild(pom)
+}
+
+function printButton() {
+  const dataUrl = canvas.value.toDataURL()
+
+  let content = "<!DOCTYPE html>"
+  content += "<html>"
+  content += "<head><title>Name planner</title></head>"
+  content += "<body>"
+  content += "<img src=\"" + dataUrl + "\""
+  content += "</body>"
+  content += "</html>"
+
+  const printWin = window.open("", "", "width=" + screen.availWidth + ",height=" + screen.availHeight)
+  if (printWin !== null) {
+    printWin.document.open()
+    printWin.document.write(content)
+
+    printWin.document.addEventListener('load', function () {
+      printWin.focus()
+      printWin.print()
+      printWin.document.close()
+      printWin.close()
+    }, true)
+  }
+}
 
 
 
@@ -4122,34 +3907,8 @@ onMounted(() => {
     oldDist = null;
   });
 
-  document.getElementById("navZoomIn")!.addEventListener("click", () => {
-    zoomToMiddle(Math.pow(settings.value.zoomFactor, 4));
-  });
 
-  document.getElementById("navZoomOut")!.addEventListener("click", () => {
-    zoomToMiddle(1 / Math.pow(settings.value.zoomFactor, 4));
-  });
-
-  document.getElementById("navCenter")!.addEventListener("click", () => {
-    centerProjection();
-  });
-
-  document.getElementById("navUp")!.addEventListener("click", () => {
-    moveProjection(Direction.Up);
-  });
-
-  document.getElementById("navRight")!.addEventListener("click", () => {
-    moveProjection(Direction.Right);
-  });
-
-  document.getElementById("navDown")!.addEventListener("click", () => {
-    moveProjection(Direction.Down);
-  });
-
-  document.getElementById("navLeft")!.addEventListener("click", () => {
-    moveProjection(Direction.Left);
-  });
-
+//Управление расположением схемы по стрелкам клавиатуры
   document.addEventListener("keydown", (e) => {
     switch (e.code) {
       case "ArrowRight": {
@@ -4170,95 +3929,6 @@ onMounted(() => {
       }
     }
   });
-
-
-  document.getElementById("loadInput")!.addEventListener("change", (e: Event) => {
-    const files = (e.target as HTMLInputElement).files;
-    const file = files?.item(0);
-
-    if (!file) {
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.readAsText(file, "UTF-8");
-
-    reader.onload = readerEvent => {
-      const target = readerEvent.target;
-      if (target) {
-        const content = target.result as string;
-        loadFloorplan(content, file.name)
-      }
-    };
-  });
-
-  document.getElementById("saveButton")!.addEventListener("click", () => {
-    const pom = document.createElement("a");
-    pom.setAttribute("href", "data:text/plain;charset=utf-8," +
-      encodeURIComponent(JSON.stringify({ graph, labels, openables, furniture, floorplanImage }, null, " ")));
-
-    pom.setAttribute("download", "house.json");
-
-    pom.style.display = "none";
-    document.body.appendChild(pom);
-
-    pom.click();
-
-    document.body.removeChild(pom);
-
-    // TODO: this is too optimistic, cancel might have been selected
-    setState();
-  });
-
-  document.getElementById("exportButton")!.addEventListener("click", () => {
-    const pom = document.createElement("a");
-    pom.setAttribute("href", canvas.value.toDataURL());
-
-    pom.setAttribute("download", "house.png");
-
-    pom.style.display = "none";
-    document.body.appendChild(pom);
-
-    pom.click();
-
-    document.body.removeChild(pom);
-  });
-
-  document.getElementById("printButton")!.addEventListener("click", () => {
-    const dataUrl = canvas.value.toDataURL();
-
-    let content = "<!DOCTYPE html>";
-    content += "<html>";
-    content += "<head><title>PenAndPaperFloorplanner</title></head>";
-    content += "<body>";
-    content += "<img src=\"" + dataUrl + "\"";
-    content += "</body>";
-    content += "</html>";
-
-    const printWin = window.open("", "", "width=" + screen.availWidth + ",height=" + screen.availHeight);
-    if (printWin !== null) {
-      printWin.document.open();
-      printWin.document.write(content);
-
-      printWin.document.addEventListener('load', function () {
-        printWin.focus();
-        printWin.print();
-        printWin.document.close();
-        printWin.close();
-      }, true);
-    }
-  });
-
-  // document.getElementById("helpOpen")!.addEventListener("click", () => {
-  //   const helpDialog = document.getElementById("helpDialog") as HTMLDialogElement;
-  //   helpDialog.showModal();
-  // });
-
-  // document.getElementById("helpClose")!.addEventListener("click", () => {
-  //   const helpDialog = document.getElementById("helpDialog") as HTMLDialogElement;
-  //   helpDialog.close();
-  // });
-
 
   }
 )

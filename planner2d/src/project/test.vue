@@ -265,23 +265,29 @@
 <!--      </div>-->
 
 
-      <div >
+      <div>
+<!--        Изменение размера узлов-->
         <label id="nodeTransSliderLabel" for="nodeTransSlider">Corner Size</label>
-        <input type="range" id="nodeTransSlider" class="w100pc" min="5" max="750" :value="nodeTransSlider" @input="setNodeTransSize">
+        <input type="range" id="nodeTransSlider" class="w100pc" min="5" max="750" v-model="nodeTransSlider" @input="setNodeTransSize">
         <label id="nodeExtendSliderLabel" for="nodeExtendSlider">Label</label>
-        <input type="range" id="nodeExtendSlider" class="w100pc" min="5" max="750" :value="nodeExtendSlider" @input="setNodeExtendSize">
+        <input type="range" id="nodeExtendSlider" class="w100pc" min="5" max="750" v-model="nodeExtendSlider" @input="setNodeExtendSize">
+
+<!--        Добавление лейблов-->
         <label id="labelNameInputLabel" for="labelNameInput">  name</label>
-        <input id="labelNameInput" value="Livingroom" class="w100pc">
+        <input id="labelNameInput" value="Livingroom" class="w100pc" v-model="labelNameInput">
         <label id="labelHeightInputLabel" for="labelHeightInput">heigth</label>
-        <input type="number" id="labelHeightInput" class="w100pc" min="1" value="1000" required="">
-        <button id="addLabelButton" class="addButton">add lable</button>
+        <input type="number" id="labelHeightInput" class="w100pc" min="1" value="1000" required="" v-model="labelHeightInput">
+        <button id="addLabelButton" class="addButton" @click="addLabelButton">add lable</button>
+
+
+<!--        Добавление дверей-->
         <label id="openableWidthInputLabel" for="openableWidthInput">Door/Window</label>
-        <input type="number" id="openableWidthInput" class="w100pc" min="1" value="1000" required="">
+        <input type="number" id="openableWidthInput" class="w100pc" min="1" v-model="openableWidthInput" required="">
         <label id="openableTypeInputLabel" for="leftOpenableButton"> type</label>
         <button type="button" id="leftOpenableButton" class="tabLinks openableType" @click="changeToLeftOpenableType" >L</button>
         <button type="button" id="rightOpenableButton" class="tabLinks openableType" @click="changeToRightOpenableType" >R</button>
         <button type="button" id="doubleOpenableButton" class="tabLinks openableType" @click="changeToDoubleOpenableType">D</button>
-        <button id="addOpenableButton" class="addButton"> add </button>
+        <button id="addOpenableButton" class="addButton" @click="addOpenableButton"> add </button>
       </div>
 
 
@@ -1208,6 +1214,7 @@ function changeToPresentationMode(e: MouseEvent) { changeMode(e, Mode.Presentati
 function changeOpenableType(e: MouseEvent, type: OpenableType) {
   // resetElements("openableType");
   settings.value.openableType = type;
+  console.log(settings.value.openableType)
   // (e.currentTarget as HTMLButtonElement).className += " active";
   drawMain();
 }
@@ -1299,7 +1306,22 @@ function changeToDoubleOpenableType(e: MouseEvent) { changeOpenableType(e, Opena
 
 
 // // Room Mode
-//
+const labelNameInput = ref('roooooom')
+const labelHeightInput = ref(1000)
+function addLabelButton() {
+
+  if (!validNumericInput(labelHeightInput.value) || !labelNameInput.value) {
+    alert(getText(loc.room.label.inputError));
+    return;
+  }
+
+  const start = projection.to({ x: 10, y: 100 });
+  setFontSize(labelHeightInput.value)
+  labels.push(new Rectangle(labelNameInput.value, MovableType.Rectangle, start.x, start.y, ctx.value.measureText(labelNameInput.value).width, labelHeightInput.value));
+  console.log("add Label:", labelNameInput.value);
+  drawMain();
+
+}
 // document.getElementById("addLabelButton")!.addEventListener("click", (e) => {
 //   e.preventDefault();
 //   const labelName = (document.getElementById("labelNameInput") as HTMLInputElement).value;
@@ -1315,7 +1337,32 @@ function changeToDoubleOpenableType(e: MouseEvent) { changeOpenableType(e, Opena
 //   console.log("add Label:", labelName);
 //   drawMain();
 // });
-//
+
+function validNumericInput(...values: number[]) {
+  for (const value of values) {
+    if (isNaN(value) || value < 1) {
+      return false;
+    }
+  }
+  return true;
+}
+
+const openableWidthInput = ref(1000)
+
+function addOpenableButton() {
+
+  if (!validNumericInput(openableWidthInput.value)) {
+    alert(getText(loc.room.openable.inputError));
+    return;
+  }
+
+  const start = projection.to({ x: 10, y: 100 })
+  openables.push(new Openable(settings.value.openableType, start.x, start.y, openableWidthInput.value, 180))
+  console.log("add Openable:", settings.value.openableType)
+  drawMain()
+}
+
+
 // document.getElementById("addOpenableButton")!.addEventListener("click", (e) => {
 //   e.preventDefault();
 //   const openableWidth = (document.getElementById("openableWidthInput") as HTMLInputElement).valueAsNumber;
@@ -2417,6 +2464,7 @@ function initNodeSize() {
 }
 
 function setNodeTransSize() {
+  console.log(nodeTransSlider.value)
   settings.value.nodeTransSize = Number(nodeTransSlider.value);
   settings.value.nodeExtendSize = Math.max(settings.value.nodeExtendSize, settings.value.nodeTransSize);
 

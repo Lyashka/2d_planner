@@ -158,7 +158,7 @@
             <tr>
               <td><label id="nameInputLabel" for="nameInput"></label></td>
               <td class="inputTD">
-                <input id="nameInput" class="w100pc" value="Couch">
+                <input id="nameInput" class="w100pc" value="Couch" v-model="nameInput">
               </td>
             </tr>
             <tr>
@@ -172,69 +172,51 @@
             </tr>
 <!--            <tbody id="circleTab" class="tabContent furnitureType">-->
             <tr>
-              <td><label id="circleWidthInputLabel" for="circleWidthInput"></label></td>
+              <td><label id="circleWidthInputLabel" for="circleWidthInput">Круг</label></td>
               <td class="inputTD">
-                <input type="number" id="circleWidthInput" class="w100pc" min="1" value="1000" required="">
+                <input type="number" id="circleWidthInput" class="w100pc" min="1" value="1000" required="" v-model="circleWidthInput">
+                <input type="number" id="circleHeightInput" class="w100pc" min="1" value="1000" required="" v-model="circleHeightInput">
               </td>
             </tr>
+
             <tr>
-              <td><label id="circleHeightInputLabel" for="circleHeightInput"></label></td>
+              <td><label id="widthInputLabel" for="widthInput">Прямоугольник</label></td>
               <td class="inputTD">
-                <input type="number" id="circleHeightInput" class="w100pc" min="1" value="1000" required="">
+                <input type="number" id="widthInput" class="w100pc" min="1" value="2000" required="" v-model="widthInput">
+                <input type="number" id="heightInput" class="w100pc" min="1" value="1000" required="" v-model="heightInput">
               </td>
             </tr>
-<!--            </tbody>-->
-<!--            <tbody id="rectangleTab" class="tabContent furnitureType">-->
+
             <tr>
-              <td><label id="widthInputLabel" for="widthInput"></label></td>
+              <td><label id="LWidthInputLabel" for="LWidthInput1">Г-образная</label></td>
               <td class="inputTD">
-                <input type="number" id="widthInput" class="w100pc" min="1" value="2000" required="">
+                <input type="number" id="LWidthInput1" class="w50pc" min="1" value="1000" required="" v-model="LWidthInput1">
+                <input type="number" id="LWidthInput2" class="w50pc" min="1" value="1000" required="" v-model="LWidthInput2">
+              </td>
+              <td class="inputTD">
+                <input type="number" id="LHeightInput1" class="w50pc" min="1" value="2000" required="" v-model="LHeightInput1">
+                <input type="number" id="LHeightInput2" class="w50pc" min="1" value="1000" required="" v-model="LHeightInput2">
               </td>
             </tr>
+
+
             <tr>
-              <td><label id="heightInputLabel" for="heightInput"></label></td>
+              <td><label id="UWidthInputLabel" for="UWidthInput1">П-образная</label></td>
               <td class="inputTD">
-                <input type="number" id="heightInput" class="w100pc" min="1" value="1000" required="">
+                <input type="number" id="UWidthInput1" class="w33pc" min="1" value="1000" required="" v-model="UWidthInput1">
+                <input type="number" id="UWidthInput2" class="w33pc" min="1" value="1000" required="" v-model="UWidthInput2">
+                <input type="number" id="UWidthInput3" class="w33pc" min="1" value="1000" required="" v-model="UWidthInput3">
               </td>
-            </tr>
-<!--            </tbody>-->
-<!--            <tbody id="LTab" class="tabContent furnitureType">-->
-            <tr>
-              <td><label id="LWidthInputLabel" for="LWidthInput1"></label></td>
               <td class="inputTD">
-                <input type="number" id="LWidthInput1" class="w50pc" min="1" value="1000" required="">
-                <input type="number" id="LWidthInput2" class="w50pc" min="1" value="1000" required="">
-              </td>
-            </tr>
-            <tr>
-              <td><label id="LHeightInputLabel" for="LHeightInput1"></label></td>
-              <td class="inputTD">
-                <input type="number" id="LHeightInput1" class="w50pc" min="1" value="2000" required="">
-                <input type="number" id="LHeightInput2" class="w50pc" min="1" value="1000" required="">
-              </td>
-            </tr>
-<!--            </tbody>-->
-<!--            <tbody id="UTab" class="tabContent furnitureType">-->
-            <tr>
-              <td><label id="UWidthInputLabel" for="UWidthInput1"></label></td>
-              <td class="inputTD">
-                <input type="number" id="UWidthInput1" class="w33pc" min="1" value="1000" required="">
-                <input type="number" id="UWidthInput2" class="w33pc" min="1" value="1000" required="">
-                <input type="number" id="UWidthInput3" class="w33pc" min="1" value="1000" required="">
-              </td>
-            </tr>
-            <tr>
-              <td><label id="UHeightInputLabel" for="UHeightInput1"></label></td>
-              <td class="inputTD">
-                <input type="number" id="UHeightInput1" class="w33pc" min="1" value="2000" required="">
-                <input type="number" id="UHeightInput2" class="w33pc" min="1" value="1000" required="">
-                <input type="number" id="UHeightInput3" class="w33pc" min="1" value="2000" required="">
+                <input type="number" id="UHeightInput1" class="w33pc" min="1" value="2000" required="" v-model="UHeightInput1">
+                <input type="number" id="UHeightInput2" class="w33pc" min="1" value="1000" required="" v-model="UHeightInput2">
+                <input type="number" id="UHeightInput3" class="w33pc" min="1" value="2000" required="" v-model="UHeightInput3">
               </td>
             </tr>
 
             <tr>
               <td colspan="2">
-                <button id="addFurnitureButton" class="addButton"></button>
+                <button id="addFurnitureButton" class="addButton" @click="addFurnitureButton">add Furniture</button>
               </td>
             </tr>
             </tbody>
@@ -254,7 +236,7 @@
           <button type="button" id="saveButton">save</button>
 
           <div>
-            <label id="loadButton" class="loadInputClass" for="loadInput"></label>
+            <label id="loadButton" class="loadInputClass" for="loadInput">load</label>
             <input type="file" id="loadInput" class="loadFileClass" >
           </div>
 
@@ -1225,33 +1207,34 @@ function changeToDoubleOpenableType(e: MouseEvent) { changeOpenableType(e, Opena
 
 
 // furniture type tabs
-// function changeFurnitureType(e: MouseEvent, type: FurnitureType) {
-//   resetElements("furnitureType");
-//
-//   settings.value.type = type;
-//
-//   switch (type) {
-//     case FurnitureType.Rectangle:
-//       document.getElementById("rectangleTab")!.style.display = "contents";
-//       break;
-//     case FurnitureType.Circle:
-//       document.getElementById("circleTab")!.style.display = "contents";
-//       break;
-//     case FurnitureType.L:
-//       document.getElementById("LTab")!.style.display = "contents";
-//       break;
-//     case FurnitureType.U:
-//       document.getElementById("UTab")!.style.display = "contents";
-//       break;
-//   }
-//   // (e.currentTarget as HTMLBRElement).className += " active";
-//
-//   drawMain();
-// }
-// function changeToRectangleType(e: MouseEvent) { changeFurnitureType(e, FurnitureType.Rectangle); }
-// function changeToCircleType(e: MouseEvent) { changeFurnitureType(e, FurnitureType.Circle); }
-// function changeToLType(e: MouseEvent) { changeFurnitureType(e, FurnitureType.L); }
-// function changeToUType(e: MouseEvent) { changeFurnitureType(e, FurnitureType.U); }
+function changeFurnitureType(e: MouseEvent, type: FurnitureType) {
+  // resetElements("furnitureType");
+
+  settings.value.type = type;
+
+  // switch (type) {
+  //   case FurnitureType.Rectangle:
+  //     document.getElementById("rectangleTab")!.style.display = "contents";
+  //     break;
+  //   case FurnitureType.Circle:
+  //     document.getElementById("circleTab")!.style.display = "contents";
+  //     break;
+  //   case FurnitureType.L:
+  //     document.getElementById("LTab")!.style.display = "contents";
+  //     break;
+  //   case FurnitureType.U:
+  //     document.getElementById("UTab")!.style.display = "contents";
+  //     break;
+  // }
+  // (e.currentTarget as HTMLBRElement).className += " active";
+
+  drawMain();
+}
+
+function changeToRectangleType(e: MouseEvent) { changeFurnitureType(e, FurnitureType.Rectangle); }
+function changeToCircleType(e: MouseEvent) { changeFurnitureType(e, FurnitureType.Circle); }
+function changeToLType(e: MouseEvent) { changeFurnitureType(e, FurnitureType.L); }
+function changeToUType(e: MouseEvent) { changeFurnitureType(e, FurnitureType.U); }
 
 
 // function validNumericInput(...values: number[]) {
@@ -1379,80 +1362,95 @@ function addOpenableButton() {
 // });
 
 // // Furniture Mode
-//
-// document.getElementById("addFurnitureButton")!.addEventListener("click", (e) => {
-//   e.preventDefault();
-//
-//   const furName = (document.getElementById("nameInput") as HTMLInputElement).value;
-//
-//   switch (settings.type) {
-//     case FurnitureType.Rectangle: {
-//       const furWidth = (document.getElementById("widthInput") as HTMLInputElement).valueAsNumber;
-//       const furHeight = (document.getElementById("heightInput") as HTMLInputElement).valueAsNumber;
-//       if (!validNumericInput(furWidth, furHeight)) {
-//         alert(getText(loc.furniture.add.inputError));
-//         return;
-//       }
-//       const start = projection.to({ x: 10, y: 100 });
-//       furniture.push(new Rectangle(furName, MovableType.Rectangle, start.x, start.y, furWidth, furHeight));
-//       break;
-//     }
-//     case FurnitureType.Circle: {
-//       const circleWidth = (document.getElementById("circleWidthInput") as HTMLInputElement).valueAsNumber;
-//       const circleHeight = (document.getElementById("circleHeightInput") as HTMLInputElement).valueAsNumber;
-//       if (!validNumericInput(circleWidth, circleHeight)) {
-//         alert(getText(loc.furniture.add.inputError));
-//         return;
-//       }
-//       const start = projection.to({ x: 10, y: 100 });
-//       furniture.push(circleWidth === circleHeight ?
-//         new Circle(furName, start.x + circleWidth / 2, start.y + circleWidth / 2, circleWidth / 2) :
-//         new Ellipse(furName, start.x + circleWidth / 2, start.y + circleHeight / 2, circleWidth / 2, circleHeight / 2));
-//       break;
-//     }
-//     case FurnitureType.L: {
-//       const LWidth1 = (document.getElementById("LWidthInput1") as HTMLInputElement).valueAsNumber;
-//       const LHeight1 = (document.getElementById("LHeightInput1") as HTMLInputElement).valueAsNumber;
-//
-//       const LWidth2 = (document.getElementById("LWidthInput2") as HTMLInputElement).valueAsNumber;
-//       const LHeight2 = (document.getElementById("LHeightInput2") as HTMLInputElement).valueAsNumber;
-//       if (!validNumericInput(LWidth1, LHeight1, LWidth2, LHeight2)) {
-//         alert(getText(loc.furniture.add.inputError));
-//         return;
-//       }
-//       const start = projection.to({ x: 10, y: 100 });
-//       let newRect = new Rectangle(furName, MovableType.L, start.x, start.y, LWidth1, LHeight1);
-//       newRect.dims.push({ w: LWidth2, h: LHeight2 });
-//       furniture.push(newRect);
-//       break;
-//     }
-//     case FurnitureType.U: {
-//       const UWidth1 = (document.getElementById("UWidthInput1") as HTMLInputElement).valueAsNumber;
-//       const UHeight1 = (document.getElementById("UHeightInput1") as HTMLInputElement).valueAsNumber;
-//
-//       const UWidth2 = (document.getElementById("UWidthInput2") as HTMLInputElement).valueAsNumber;
-//       const UHeight2 = (document.getElementById("UHeightInput2") as HTMLInputElement).valueAsNumber;
-//
-//       const UWidth3 = (document.getElementById("UWidthInput3") as HTMLInputElement).valueAsNumber;
-//       const UHeight3 = (document.getElementById("UHeightInput3") as HTMLInputElement).valueAsNumber;
-//
-//       if (!validNumericInput(UWidth1, UHeight1, UWidth2, UHeight2, UWidth3, UHeight3)) {
-//         alert(getText(loc.furniture.add.inputError));
-//         return;
-//       }
-//       const start = projection.to({ x: 10, y: 100 });
-//       let newRect = new Rectangle(furName, MovableType.U, start.x, start.y, UWidth1, UHeight1);
-//       newRect.dims.push({ w: UWidth2, h: UHeight2 });
-//       newRect.dims.push({ w: UWidth3, h: UHeight3 });
-//       furniture.push(newRect);
-//       break;
-//     }
-//   }
-//
-//   console.log("add %s: %s", settings.type, furName);
-//   drawMain();
-// });
-//
+
+const nameInput = ref('NameInput')
+
+//Для квадрата
+const widthInput = ref(2000)
+const heightInput = ref(1000)
+
+//Для круга
+const circleWidthInput = ref(1000)
+const circleHeightInput = ref(1000)
+
+//Для L-образной фигуры
+const LWidthInput1 = ref(1000)
+const LHeightInput1 = ref(2000)
+
+const LWidthInput2 = ref(1000)
+const LHeightInput2 = ref(1000)
+
+//Для П-образной фигуры
+const UWidthInput1 = ref(1000)
+const UHeightInput1 = ref(2000)
+
+const UWidthInput2 = ref(1000)
+const UHeightInput2 = ref(1000)
+
+const UWidthInput3 = ref(1000)
+const UHeightInput3 = ref(2000)
+
+function addFurnitureButton() {
+
+  switch (settings.value.type) {
+
+    case FurnitureType.Rectangle: {
+      if (!validNumericInput(widthInput.value, heightInput.value)) {
+        alert(getText(loc.furniture.add.inputError));
+        return;
+      }
+      const start = projection.to({ x: 10, y: 100 });
+      furniture.push(new Rectangle(nameInput.value, MovableType.Rectangle, start.x, start.y, widthInput.value, heightInput.value));
+      break;
+    }
+
+    case FurnitureType.Circle: {
+      if (!validNumericInput(circleWidthInput.value, circleHeightInput.value)) {
+        alert(getText(loc.furniture.add.inputError));
+        return;
+      }
+      const start = projection.to({ x: 10, y: 100 });
+      furniture.push(circleWidthInput.value === circleHeightInput.value ?
+        new Circle(nameInput.value, start.x + circleWidthInput.value / 2, start.y + circleWidthInput.value / 2, circleWidthInput.value / 2) :
+        new Ellipse(nameInput.value, start.x + circleWidthInput.value / 2, start.y + circleHeightInput.value / 2, circleWidthInput.value / 2, circleHeightInput.value / 2));
+      break;
+    }
+
+    case FurnitureType.L: {
+      if (!validNumericInput(LWidthInput1.value, LHeightInput1.value, LWidthInput2.value, LHeightInput2.value)) {
+        alert(getText(loc.furniture.add.inputError));
+        return;
+      }
+      const start = projection.to({ x: 10, y: 100 });
+      let newRect = new Rectangle(nameInput.value, MovableType.L, start.x, start.y, LWidthInput1.value, LHeightInput1.value);
+      newRect.dims.push({ w:  LWidthInput2.value, h: LHeightInput2.value });
+      furniture.push(newRect);
+      break;
+    }
+
+    case FurnitureType.U: {
+      if (!validNumericInput(UWidthInput1.value, UHeightInput1.value, UWidthInput2.value, UHeightInput2.value, UWidthInput3.value, UHeightInput3.value)) {
+        alert(getText(loc.furniture.add.inputError));
+        return;
+      }
+      const start = projection.to({ x: 10, y: 100 });
+      let newRect = new Rectangle(nameInput.value, MovableType.U, start.x, start.y, UWidthInput1.value, UHeightInput1.value);
+      newRect.dims.push({ w: UWidthInput2.value, h: UHeightInput2.value });
+      newRect.dims.push({ w: UWidthInput3.value, h: UHeightInput3.value });
+      furniture.push(newRect);
+      break;
+    }
+  }
+
+  console.log("add %s: %s", settings.value.type, nameInput.value);
+  drawMain();
+}
+
+
+
+
+
+
 // window.addEventListener("beforeunload", (e) => {
 //   if (state !== createState()) {
 //     e.preventDefault();
@@ -1462,16 +1460,18 @@ function addOpenableButton() {
 // });
 //
 // document.getElementById("edgeLabelCheckbox")!.addEventListener("change", (e) => {
-//   settings.showEdgeLabels = (e.target as HTMLInputElement).checked;
+//   settings.value.showEdgeLabels = (e.target as HTMLInputElement).checked;
 //
 //   drawMain();
 // });
 //
 // document.getElementById("roomSizeCheckbox")!.addEventListener("change", (e) => {
-//   settings.showRoomSize = (e.target as HTMLInputElement).checked;
+//   settings.value.showRoomSize = (e.target as HTMLInputElement).checked;
 //
 //   drawMain();
 // });
+
+
 
 type CornerSnap = { x: optionalNumber, y: optionalNumber, edge: Edge | null, pos: optionalNumber };
 type CornerJSON = { id: number, p: Point };
@@ -2464,7 +2464,6 @@ function initNodeSize() {
 }
 
 function setNodeTransSize() {
-  console.log(nodeTransSlider.value)
   settings.value.nodeTransSize = Number(nodeTransSlider.value);
   settings.value.nodeExtendSize = Math.max(settings.value.nodeExtendSize, settings.value.nodeTransSize);
 

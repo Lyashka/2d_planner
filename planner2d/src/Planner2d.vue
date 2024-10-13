@@ -1,38 +1,39 @@
 <template>
+<v-layout>
+  <v-main>
+    <div id="container">
 
-  <div id="container">
 
+      <div id="content">
+        <canvas id="canvas">Your browser does not support the HTML 5 Canvas.</canvas>
 
-    <div id="content">
-      <canvas id="canvas">Your browser does not support the HTML 5 Canvas.</canvas>
-
-      <div class="navBar">
-        <button type="button" id="navZoomIn" class="navBarButton" @click="navZoomIn">⊕</button>
-        <button type="button" id="navCenter" class="navBarButton" @click="navCenter">⊚</button>
-        <button type="button" id="navZoomOut" class="navBarButton" @click="navZoomOut">⊖</button>
-      </div>
-
-      <div class="navBar translate">
-        <button type="button" id="navUp" class="navBarButton" @click="navUp">⮉</button>
-        <div class="subBar">
-          <button type="button" id="navLeft" class="navBarButton" @click="navLeft">⮈</button>
-          <button type="button" id="navRight" class="navBarButton" @click="navRight">⮊</button>
+        <div class="navBar">
+          <button type="button" id="navZoomIn" class="navBarButton" @click="navZoomIn">⊕</button>
+          <button type="button" id="navCenter" class="navBarButton" @click="navCenter">⊚</button>
+          <button type="button" id="navZoomOut" class="navBarButton" @click="navZoomOut">⊖</button>
         </div>
-        <button type="button" id="navDown" class="navBarButton" @click="navDown">⮋</button>
-      </div>
 
-
-
-
-
-      <div id="sidebar">
-
-        <div class="tab mode buttonRow">
-<!--          <button type="button" id="floorplanButton" class="tabLinks mode" @click="changeToFloorplanMode">floorplan</button>-->
-          <button type="button" id="roomButton" class="tabLinks mode" @click="changeToRoomMode">room</button>
-          <button type="button" id="furnitureButton" class="tabLinks mode" @click="changeToFurnitureMode">furniture</button>
-          <button type="button" id="presentationButton" class="tabLinks mode" @click="changeToPresentationMode">presentation</button>
+        <div class="navBar translate">
+          <button type="button" id="navUp" class="navBarButton" @click="navUp">⮉</button>
+          <div class="subBar">
+            <button type="button" id="navLeft" class="navBarButton" @click="navLeft">⮈</button>
+            <button type="button" id="navRight" class="navBarButton" @click="navRight">⮊</button>
+          </div>
+          <button type="button" id="navDown" class="navBarButton" @click="navDown">⮋</button>
         </div>
+
+
+
+
+
+        <div id="sidebar">
+
+          <div class="tab mode buttonRow">
+            <!--          <button type="button" id="floorplanButton" class="tabLinks mode" @click="changeToFloorplanMode">floorplan</button>-->
+            <button type="button" id="roomButton" class="tabLinks mode" @click="changeToRoomMode">room</button>
+            <button type="button" id="furnitureButton" class="tabLinks mode" @click="changeToFurnitureMode">furniture</button>
+            <button type="button" id="presentationButton" class="tabLinks mode" @click="changeToPresentationMode">presentation</button>
+          </div>
 
           <table>
             <tbody>
@@ -126,127 +127,108 @@
             </tbody>
           </table>
 
-<!--         Чекбоксы и кнопки СОХРАНИТЬ, ЗАГРУЗИТЬ, ЭКСПОРТ, ПРИНТ-->
-        <div style="display: flex; flex-direction: column">
-          <label for="edgeLabelCheckbox">Длины стен</label>
-          <input type="checkbox" id="edgeLabelCheckbox" class="checkboxClass" v-model="edgeLabelCheckbox" @input="edgeLabelCheckboxInput">
+          <!--         Чекбоксы и кнопки СОХРАНИТЬ, ЗАГРУЗИТЬ, ЭКСПОРТ, ПРИНТ-->
+          <div style="display: flex; flex-direction: column">
+            <label for="edgeLabelCheckbox">Длины стен</label>
+            <input type="checkbox" id="edgeLabelCheckbox" class="checkboxClass" v-model="edgeLabelCheckbox" @input="edgeLabelCheckboxInput">
 
-          <label for="roomSizeCheckbox">Квадратные метры помещения</label>
-          <input type="checkbox" id="roomSizeCheckbox" class="checkboxClass" v-model="roomSizeCheckbox" @input="roomSizeCheckboxInput">
-          <button type="button" id="saveButton" @click="saveButton">save</button>
-          <label id="loadButton" class="loadInputClass" for="loadInput">load</label>
-          <input type="file" id="loadInput" class="loadFileClass" @input="loadInput">
-          <button type="button" id="exportButton" @click="exportButton">export</button>
-          <button type="button" id="printButton" @click="printButton">print</button>
+            <label for="roomSizeCheckbox">Квадратные метры помещения</label>
+            <input type="checkbox" id="roomSizeCheckbox" class="checkboxClass" v-model="roomSizeCheckbox" @input="roomSizeCheckboxInput">
+            <button type="button" id="saveButton" @click="saveButton">save</button>
+            <label id="loadButton" class="loadInputClass" for="loadInput">load</label>
+            <input type="file" id="loadInput" class="loadFileClass" @input="loadInput">
+            <button type="button" id="exportButton" @click="exportButton">export</button>
+            <button type="button" id="printButton" @click="printButton">print</button>
+          </div>
+
         </div>
 
+
+        <div>
+          <!--        Изменение размера узлов-->
+          <label id="nodeTransSliderLabel" for="nodeTransSlider">Corner Size</label>
+          <input type="range" id="nodeTransSlider" class="w100pc" min="5" max="750" v-model="nodeTransSlider" @input="setNodeTransSize">
+          <label id="nodeExtendSliderLabel" for="nodeExtendSlider">Label</label>
+          <input type="range" id="nodeExtendSlider" class="w100pc" min="5" max="750" v-model="nodeExtendSlider" @input="setNodeExtendSize">
+
+          <!--        Добавление лейблов-->
+          <label id="labelNameInputLabel" for="labelNameInput">  name</label>
+          <input id="labelNameInput" value="Livingroom" class="w100pc" v-model="labelNameInput">
+          <label id="labelHeightInputLabel" for="labelHeightInput">heigth</label>
+          <input type="number" id="labelHeightInput" class="w100pc" min="1" value="1000" required="" v-model="labelHeightInput">
+          <button id="addLabelButton" class="addButton" @click="addLabelButton">add lable</button>
+
+
+          <!--        Добавление дверей-->
+          <label id="openableWidthInputLabel" for="openableWidthInput">Door/Window</label>
+          <input type="number" id="openableWidthInput" class="w100pc" min="1" v-model="openableWidthInput" required="">
+          <label id="openableTypeInputLabel" for="leftOpenableButton"> type</label>
+          <button type="button" id="leftOpenableButton" class="tabLinks openableType" @click="changeToLeftOpenableType" >L</button>
+          <button type="button" id="rightOpenableButton" class="tabLinks openableType" @click="changeToRightOpenableType" >R</button>
+          <button type="button" id="doubleOpenableButton" class="tabLinks openableType" @click="changeToDoubleOpenableType">D</button>
+          <button id="addOpenableButton" class="addButton" @click="addOpenableButton"> add </button>
         </div>
 
-
-      <div>
-<!--        Изменение размера узлов-->
-        <label id="nodeTransSliderLabel" for="nodeTransSlider">Corner Size</label>
-        <input type="range" id="nodeTransSlider" class="w100pc" min="5" max="750" v-model="nodeTransSlider" @input="setNodeTransSize">
-        <label id="nodeExtendSliderLabel" for="nodeExtendSlider">Label</label>
-        <input type="range" id="nodeExtendSlider" class="w100pc" min="5" max="750" v-model="nodeExtendSlider" @input="setNodeExtendSize">
-
-<!--        Добавление лейблов-->
-        <label id="labelNameInputLabel" for="labelNameInput">  name</label>
-        <input id="labelNameInput" value="Livingroom" class="w100pc" v-model="labelNameInput">
-        <label id="labelHeightInputLabel" for="labelHeightInput">heigth</label>
-        <input type="number" id="labelHeightInput" class="w100pc" min="1" value="1000" required="" v-model="labelHeightInput">
-        <button id="addLabelButton" class="addButton" @click="addLabelButton">add lable</button>
-
-
-<!--        Добавление дверей-->
-        <label id="openableWidthInputLabel" for="openableWidthInput">Door/Window</label>
-        <input type="number" id="openableWidthInput" class="w100pc" min="1" v-model="openableWidthInput" required="">
-        <label id="openableTypeInputLabel" for="leftOpenableButton"> type</label>
-        <button type="button" id="leftOpenableButton" class="tabLinks openableType" @click="changeToLeftOpenableType" >L</button>
-        <button type="button" id="rightOpenableButton" class="tabLinks openableType" @click="changeToRightOpenableType" >R</button>
-        <button type="button" id="doubleOpenableButton" class="tabLinks openableType" @click="changeToDoubleOpenableType">D</button>
-        <button id="addOpenableButton" class="addButton" @click="addOpenableButton"> add </button>
       </div>
 
 
     </div>
+  </v-main>
 
-  </div>
+  <SideBar/>
+</v-layout>
+
 
 </template>
 
 <script setup lang="ts">
+import TabsWindow from './components/tabsWindow.vue'
+import SideBar from './components/SideBar.vue'
+
+import {
+  mdiCropFree, mdiEye,
+  mdiFloorPlan, mdiHomeCity,
+  mdiMenuClose,
+  mdiMenuOpen, mdiTableFurniture,
+} from '@mdi/js';
+
+const items = [
+  { title: 'Floor', subtitle: 'Этаж' , icon: mdiFloorPlan },
+  { title: 'Room', subtitle: 'Комната' ,icon: mdiCropFree },
+  { title: 'Furniture', subtitle: 'Мебель' ,icon: mdiTableFurniture },
+  { title: 'Display', subtitle: 'Отображение' ,icon: mdiEye },
+]
+
+const isOpen=ref(false)
+const tab = ref(items[0].title)
+
+
+
+
+
+
+
+
+
 import { onMounted, ref } from 'vue'
 
-import { Mode, MovableType, OpenableType, FurnitureType, Point, Dim, Direction, Settings} from './defs'
+import { Mode, MovableType, OpenableType, FurnitureType, Point, Dim, Direction, optionalPoint, optionalString, optionalNumber} from './defs'
 
-const canvas = ref()
-const ctx = ref()
-
-
-class Projection {
-  scale: number;
-  p: Point;
-  drag: boolean;
-  delta: Point;
-
-  constructor(scale: number, x: number = 0, y: number = 0) {
-    this.scale = scale;
-    this.p = { x: x, y: y };
-    this.drag = false;
-    this.delta = { x: 0, y: 0 };
-  }
-  to(q: Point): Point {
-    return {
-      x: (q.x - this.p.x) / this.scale,
-      y: (q.y - this.p.y) / this.scale
-    };
-  };
-  from(q: Point): Point {
-    return {
-      x: this.p.x + q.x * this.scale,
-      y: this.p.y + q.y * this.scale
-    };
-  };
-}
-
-const projection = new Projection(0.1);
-const floorplanProjection = new Projection(1, 50, 50);
+import { useCanvasStore } from './store/canvasStore'
+import { useSettingsStore } from './store/settingsStore'
+import { useProjectionStore} from './store/projectionStore'
 
 
 
-const settings: Settings = ref({
-  language: "en",
-  mode: Mode.Room,
-  openableType: OpenableType.Left,
-  type: FurnitureType.Rectangle,
-  zoomFactor: 1.05,
-  minZoom: 1 / 500,
-  maxZoom: 100,
-  deleteDim: {
-    w: 50,
-    h: 30
-  },
-  isRemove: false,
+const { canvas, ctx } = useCanvasStore()
+const { settings } = useSettingsStore()
+const { projection, floorplanProjection } = useProjectionStore()
 
-  nodeTransSize: 50,
-  nodeExtendSize: 150,
-  nodeSnapDist: 100,
 
-  furnitureRotateSize: 100,
-  furnitureSnapAngle: 5,
-
-  showEdgeLabels: false,
-  showRoomSize: false,
-})
 
 function getCurrProjection() {
   return settings.value.mode === Mode.Floorplan ? floorplanProjection : projection;
 }
-
-type optionalPoint = { x: optionalNumber, y: optionalNumber };
-type optionalString = string | null;
-type optionalNumber = number | null;
 
 // state will lazily track changes since init or last save/load as string
 let state: optionalString = null;
@@ -3827,14 +3809,39 @@ function printButton() {
 
 
 onMounted(() => {
-    canvas.value = document.getElementById("canvas") ;
-    ctx.value = canvas.value.getContext("2d");
+  canvas.value = document.getElementById("canvas")
+  ctx.value = canvas.value.getContext("2d")
 
-  canvas.value.addEventListener("mousedown", mouseDown);
-  canvas.value.addEventListener("mousemove", mouseMove);
-  document.addEventListener("mouseup", mouseUp);
-  canvas.value.addEventListener("dblclick", mouseDoubleClick);
-  canvas.value.addEventListener("wheel", zoomEvent);
+  settings.value = {
+    language: "en",
+    mode: Mode.Room,
+    openableType: OpenableType.Left,
+    type: FurnitureType.Rectangle,
+    zoomFactor: 1.05,
+    minZoom: 1 / 500,
+    maxZoom: 100,
+    deleteDim: {
+      w: 50,
+      h: 30
+    },
+    isRemove: false,
+
+    nodeTransSize: 50,
+    nodeExtendSize: 150,
+    nodeSnapDist: 100,
+
+    furnitureRotateSize: 100,
+    furnitureSnapAngle: 5,
+
+    showEdgeLabels: false,
+    showRoomSize: false,
+  }
+
+  canvas.value.addEventListener("mousedown", mouseDown)
+  canvas.value.addEventListener("mousemove", mouseMove)
+  document.addEventListener("mouseup", mouseUp)
+  canvas.value.addEventListener("dblclick", mouseDoubleClick)
+  canvas.value.addEventListener("wheel", zoomEvent)
 
   console.log(ctx.value)
 
@@ -3989,7 +3996,7 @@ button.active {
 }
 #container {
   position: static;
-  width: 100%;
+  width: 70%;
 
 }
 #content {

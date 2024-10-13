@@ -65,3 +65,7 @@ export interface Settings {
   showEdgeLabels: boolean,
   showRoomSize: boolean,
 }
+
+export type optionalPoint = { x: optionalNumber, y: optionalNumber };
+export type optionalString = string | null;
+export type optionalNumber = number | null;

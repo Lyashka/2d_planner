@@ -1,18 +1,15 @@
 <template>
 <div>
-<!--  <header class="page-header">Header</header>-->
   <div>
-<!--    <CategoryList  />-->
-    <Test/>
+    <Planner2d/>
   </div>
 </div>
 
 </template>
 
 <script setup>
-import CategoryList from '/planner2d/src/planner2d.ts';
 
-import Test from '/planner2d/src/project/test.vue'
+import Planner2d from '/planner2d/src/Planner2d.vue'
 
 </script>
 

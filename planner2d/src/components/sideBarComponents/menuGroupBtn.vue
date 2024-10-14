@@ -1,9 +1,6 @@
 <script setup>
 
-const mdiContentSave = 'mdi-content-save'
-const mdiDownload = 'mdi-download'
-const mdiFileExport = 'mdi-file-export'
-const mdiPrinter = 'mdi-printer'
+import {mdiContentSave, mdiDownload, mdiFileExport, mdiPrinter} from "@mdi/js";
 
 const items = [
   {title: 'Save', icon: mdiContentSave},
@@ -16,21 +13,21 @@ const items = [
 <template>
   <v-row class=" ga-4 " no-gutters>
     <v-col
-        v-for="(item, index) in items"
-        :key="item.title">
+      v-for="(item, index) in items"
+      :key="item.title">
       <v-btn
-          block
-          variant="text"
+        block
+        variant="text"
       >
         <v-icon :icon="item.icon" :size="25" ></v-icon>
         <v-tooltip
-            activator="parent"
-            location="bottom center"
-            close-on-content-click
-            contained
-            location-strategy="connected"
-            open-delay="1000"
-            :text="item.title"
+          activator="parent"
+          location="bottom center"
+          close-on-content-click
+          contained
+          location-strategy="connected"
+          open-delay="1000"
+          :text="item.title"
         />
       </v-btn>
     </v-col>

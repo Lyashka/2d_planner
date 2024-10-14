@@ -9,6 +9,5 @@ export const useProjectionStore = defineStore('projectionStore', () => {
   const floorplanProjection = new Projection(1, 50, 50)
 
 
-
   return { projection, floorplanProjection }
 })

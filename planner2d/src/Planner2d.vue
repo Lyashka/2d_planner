@@ -29,7 +29,7 @@
         <div id="sidebar">
 
           <div class="tab mode buttonRow">
-            <!--          <button type="button" id="floorplanButton" class="tabLinks mode" @click="changeToFloorplanMode">floorplan</button>-->
+            <button type="button" id="floorplanButton" class="tabLinks mode" @click="changeToFloorplanMode">floorplan</button>
             <button type="button" id="roomButton" class="tabLinks mode" @click="changeToRoomMode">room</button>
             <button type="button" id="furnitureButton" class="tabLinks mode" @click="changeToFurnitureMode">furniture</button>
             <button type="button" id="presentationButton" class="tabLinks mode" @click="changeToPresentationMode">presentation</button>
@@ -182,53 +182,69 @@
 </template>
 
 <script setup lang="ts">
-import TabsWindow from './components/tabsWindow.vue'
 import SideBar from './components/SideBar.vue'
-
-import {
-  mdiCropFree, mdiEye,
-  mdiFloorPlan, mdiHomeCity,
-  mdiMenuClose,
-  mdiMenuOpen, mdiTableFurniture,
-} from '@mdi/js';
-
-const items = [
-  { title: 'Floor', subtitle: 'Этаж' , icon: mdiFloorPlan },
-  { title: 'Room', subtitle: 'Комната' ,icon: mdiCropFree },
-  { title: 'Furniture', subtitle: 'Мебель' ,icon: mdiTableFurniture },
-  { title: 'Display', subtitle: 'Отображение' ,icon: mdiEye },
-]
-
-const isOpen=ref(false)
-const tab = ref(items[0].title)
-
-
-
-
-
-
 
 
 
 import { onMounted, ref } from 'vue'
 
-import { Mode, MovableType, OpenableType, FurnitureType, Point, Dim, Direction, optionalPoint, optionalString, optionalNumber} from './defs'
+import {
+  Mode,
+  MovableType,
+  OpenableType,
+  FurnitureType,
+  Point,
+  Dim,
+  Direction,
+  optionalPoint,
+  optionalString,
+  optionalNumber,
+  CornerSnap,
+  CornerJSON,
+  EdgeJSON,
+  RectangleJSON,
+  CornerNodes,
+  Edges,
+  GraphJSON,
+  Graph
+
+} from './defs'
 
 import { useCanvasStore } from './store/canvasStore'
 import { useSettingsStore } from './store/settingsStore'
 import { useProjectionStore} from './store/projectionStore'
+import { useGraphStore } from './store/graphStore'
+
+import { Openable } from './classes/Openable'
+import { Movable } from './classes/Movable'
+import { CornerNode } from './classes/CornerNode'
+import { Edge } from './classes/Edge'
+import { Rectangle } from './classes/Rectangle'
+
+import { getCurrProjection } from './composables/getCurrProjection'
+import { handleRemove } from './composables/handleRemove'
+import { setFontSize, drawDistance, restoreDefaultContext, drawDistanceToNextWall } from './composables/updateCtx'
 
 
+import {
+  toRad,
+  toDeg,
+  rotate,
+  angleBetweenPoints,
+  toNextNumber,
+  distance,
+  translate,
+  pointInCircle,
+  getIntersectionPoint,
+  getTrapezoidArea,
+  handleSnap
+} from './composables/calculations'
 
 const { canvas, ctx } = useCanvasStore()
 const { settings } = useSettingsStore()
 const { projection, floorplanProjection } = useProjectionStore()
+const { graph } = useGraphStore()
 
-
-
-function getCurrProjection() {
-  return settings.value.mode === Mode.Floorplan ? floorplanProjection : projection;
-}
 
 // state will lazily track changes since init or last save/load as string
 let state: optionalString = null;
@@ -238,44 +254,13 @@ const furniture: (Circle | Ellipse | Rectangle)[] = [];
 
 
 // utils
-function setFontSize(size: number, fixed: boolean = true, bold: boolean = false) {
-  const proj = getCurrProjection();
-  ctx.value.font = (bold ? "normal 900 " : "") + (size / (fixed ? 1 : proj.scale)) + "px \"Segoe UI\", Arial, Helvetica, sans-serif";
-}
 
-function restoreDefaultContext() {
-  const proj = getCurrProjection();
-  ctx.value.lineWidth = 1.5 / proj.scale;
-  ctx.value.lineJoin = "miter";
-  setFontSize(15);
-  ctx.value.textAlign = "center";
-  ctx.value.textBaseline = "alphabetic";
 
-  ctx.value.fillStyle = "black";
-  ctx.value.strokeStyle = "black";
-}
 
-function willRemove(p: Point): boolean {
-  return p.x >= canvas.value.width - settings.value.deleteDim.w && p.x <= canvas.value.width && p.y >= 0 && p.y <= settings.value.deleteDim.h;
-}
 
-function handleRemove(p: Point, elem: Movable | CornerNode) {
-  if (willRemove(p)) {
-    elem.remove = true;
-    settings.value.isRemove = true;
-  } else {
-    if (elem.remove) {
-      settings.value.isRemove = false;
-    }
-    elem.remove = false;
-  }
-}
 
-function drawDistance(x: number, y: number, distance: number, precision: number | null = null, unit: string = "", factor: number = 1) {
-  const distanceInUnit = distance / factor;
-  const output = (precision === null ? distanceInUnit : distanceInUnit.toFixed(precision)) + unit;
-  ctx.value.fillText(output, x, y, distance);
-}
+
+
 
 function drawMain() {
   ctx.value.reset();
@@ -312,7 +297,7 @@ function drawMain() {
   drawScale();
   drawDeletionField();
 
-  if (Object.keys(graph.nodes).length === 0 && furniture.length === 0 && openables.length === 0 && labels.length === 0 && floorplanImage.image === null) {
+  if (Object.keys(graph.value.nodes).length === 0 && furniture.length === 0 && openables.length === 0 && labels.length === 0 && floorplanImage.image === null) {
     drawHelp();
   } else {
     for (let i = labels.length - 1; i >= 0; i--) {
@@ -329,7 +314,7 @@ function drawMain() {
       }
     }
 
-    graph.draw();
+    graph.value.draw();
 
     for (let i = furniture.length - 1; i >= 0; i--) {
       const fur = furniture[i];
@@ -496,30 +481,7 @@ function drawDeletionField() {
   restoreDefaultContext()
 }
 
-function drawDistanceToNextWall(center: Point, border: Point) {
-  const intersectionPoint = graph.nextEdgeToSegment(center, border)
-  if (intersectionPoint !== null) {
-    ctx.value.beginPath()
-    ctx.value.moveTo(border.x, border.y)
-    ctx.value.lineTo(intersectionPoint.x, intersectionPoint.y)
-    ctx.value.stroke()
 
-    const dist = distance(border, intersectionPoint)
-
-    ctx.value.save()
-
-    ctx.value.translate((border.x + intersectionPoint.x) / 2, (border.y + intersectionPoint.y) / 2)
-    const angle = Math.atan2(border.y - intersectionPoint.y, border.x - intersectionPoint.x)
-
-    ctx.value.rotate(angle < -Math.PI / 2 || angle > Math.PI / 2 ? angle + Math.PI : angle)
-
-    ctx.value.beginPath()
-    drawDistance(0, 0, dist, 0, "mm")
-    ctx.value.stroke()
-
-    ctx.value.restore()
-  }
-}
 
 function centerProjection() {
   const proj = getCurrProjection();
@@ -545,7 +507,7 @@ function centerProjection() {
     for (const fur of furniture) {
       updateBoundary(fur.center());
     }
-    for (const node of Object.values(graph.nodes)) {
+    for (const node of Object.values(graph.value.nodes)) {
       updateBoundary(node.p);
     }
   }
@@ -1291,827 +1253,15 @@ function addFurnitureButton() {
 
 
 
-type CornerSnap = { x: optionalNumber, y: optionalNumber, edge: Edge | null, pos: optionalNumber };
-type CornerJSON = { id: number, p: Point };
-class CornerNode {
-  id: number;
-  p: Point;
-  delta: Point;
-  translate: boolean;
-  extend: boolean;
-  snap: CornerSnap;
-  remove: boolean;
 
-  constructor(id: number, x: number, y: number) {
-    this.id = id;
-    this.p = {
-      x,
-      y
-    };
-    this.delta = {
-      x: 0,
-      y: 0
-    };
-    this.translate = false;
-    this.extend = false;
-    this.snap = {
-      x: null,
-      y: null,
-      edge: null,
-      pos: null,
-    };
-    this.remove = false;
-  }
 
-  toJSON(): CornerJSON {
-    return { id: this.id, p: this.p };
-  }
-}
 
-type EdgeJSON = { id1: number, id2: number, stroke: string };
-class Edge {
-  id1: number;
-  id2: number;
-  stroke: string;
-  snapOpenables: Openable[];
-  constructor(id1: number, id2: number) {
-    this.id1 = id1;
-    this.id2 = id2;
-    this.stroke = "black";
-    this.snapOpenables = [];
-  }
-  toJSON(): EdgeJSON {
-    return { id1: this.id1, id2: this.id2, stroke: this.stroke };
-  }
-}
-type CornerNodes = {
-  [key: number]: CornerNode,
-};
-type Edges = {
-  [key1: number]: {
-    [key2: number]: Edge,
-  },
-};
-type GraphJSON = { nodes: CornerNodes, edges: Edges };
-interface Graph {
-  count: number,
-  nodes: CornerNodes,
-  edges: Edges,
-  addNode: (p: Point) => number,
-  removeNode: (id: number) => void,
-  addEdge: (id1: number, id2: number) => Edge | null,
-  removeEdge: (id1: number, id2: number) => void,
-  mergeNodes: (fromId: number, toId: number) => void,
-  bisect: (id: number, edge: Edge, pos: number) => void,
 
-  getFaces: () => CornerNode[][],
 
-  reset: () => void,
 
-  nextEdgeToSegment: (center: Point, p: Point) => Point | null,
-  closestNodeToClick: (p: Point) => optionalNumber,
-  handleNodeToNodeSnap: (node: CornerNode, p: Point, extendNode: boolean) => boolean,
-  handleNodeToEdgeSnap: (node: CornerNode, p: Point, extendNode: boolean) => boolean,
-  handleNodeToNeighborSnap: (node: CornerNode, p: Point, extendNode: boolean, change: boolean) => optionalPoint,
-  handleNodeSnap: (node: CornerNode, p: Point, extendNode: boolean) => void,
 
-  handleClick: (e: Point) => boolean,
-  handleMove: (e: Point) => boolean,
-  handleUnclick: (e: Point) => void,
 
-  draw: () => void,
-  drawFaces: () => void,
-  drawEdges: () => void,
-  drawNodes: () => void,
-  drawExtend: () => void,
 
-  toJSON: () => GraphJSON,
-};
-
-const graph: Graph =  {
-  count: 0,
-  nodes: {},
-  edges: {},
-  addNode: function (p: Point): number {
-    const id: number = this.count++;
-    this.nodes[id] = new CornerNode(id, p.x, p.y);
-
-    console.log("new Node:", id);
-    return id;
-  },
-  removeNode: function (id: number) {
-    console.log("remove Node:", id);
-    delete this.nodes[id];
-    for (const outEdges of Object.values(this.edges)) {
-      for (const edge of Object.values(outEdges)) {
-        if (edge.id1 === id || edge.id2 === id) {
-          this.removeEdge(edge.id1, edge.id2);
-        }
-      }
-    }
-    delete this.edges[id];
-  },
-  addEdge: function (id1: number, id2: number): Edge | null {
-    if (id1 === id2) {
-      return null;
-    }
-    console.log("new Edge:", id1, id2);
-    const lhsId = id1 < id2 ? id1 : id2;
-    const rhsId = id1 < id2 ? id2 : id1;
-
-    this.edges[lhsId] = this.edges[lhsId] || {};
-    this.edges[lhsId]![rhsId] = this.edges[lhsId]![rhsId] || new Edge(lhsId, rhsId);
-
-    return this.edges[lhsId]![rhsId]!;
-  },
-  removeEdge: function (id1: number, id2: number) {
-    const lhsId = id1 < id2 ? id1 : id2;
-    const rhsId = id1 < id2 ? id2 : id1;
-
-    const outEdges = this.edges[lhsId];
-    if (outEdges !== undefined) {
-      const edge = outEdges[rhsId];
-      if (edge !== undefined) {
-        for (const openable of edge.snapOpenables) {
-          openable.snap.edge = null;
-          openable.snap.pos = null;
-          openable.snap.orientation = null;
-        }
-      }
-      delete outEdges[rhsId];
-      if (Object.keys(outEdges).length === 0) {
-        delete this.edges[lhsId];
-      }
-    }
-  },
-  mergeNodes: function (fromId: number, toId: number) {
-    console.log("merge:", fromId, toId);
-    for (const outEdges of Object.values(this.edges)) {
-      for (const edge of Object.values(outEdges)) {
-        if (edge.id1 === fromId && edge.id2 !== toId) {
-          const newEdge = this.addEdge(toId, edge.id2);
-          if (newEdge !== null) {
-            newEdge.snapOpenables.push(...edge.snapOpenables);
-            for (const openable of edge.snapOpenables) {
-              openable.snap.edge = newEdge;
-              if (newEdge.id1 !== toId) {
-                openable.snap.pos = 1 - openable.snap.pos!;
-                openable.snap.orientation = (openable.snap.orientation! + 1) % 2;
-              }
-            }
-          }
-          edge.snapOpenables.length = 0;
-        } else if (edge.id2 === fromId && edge.id1 !== toId) {
-          const newEdge = this.addEdge(toId, edge.id1);
-          if (newEdge !== null) {
-            newEdge.snapOpenables.push(...edge.snapOpenables);
-            for (const openable of edge.snapOpenables) {
-              if (newEdge.id1 === toId) {
-                openable.snap.pos = 1 - openable.snap.pos!;
-                openable.snap.orientation = (openable.snap.orientation! + 1) % 2;
-              }
-              openable.snap.edge = newEdge;
-            }
-          }
-          edge.snapOpenables.length = 0;
-        }
-      }
-    }
-
-    this.removeNode(fromId);
-  },
-  bisect: function (id: number, edge: Edge, pos: number) {
-    console.log("bisect (%i, %i) by %i", edge.id1, edge.id2, id);
-
-    const newEdge1 = this.addEdge(id, edge.id1);
-    const newEdge2 = this.addEdge(id, edge.id2);
-
-    for (const openable of edge.snapOpenables) {
-      const firstPart = openable.snap.pos! <= pos;
-      const tempEdge = firstPart ? newEdge1 : newEdge2;
-      if (tempEdge !== null) {
-        tempEdge.snapOpenables.push(openable);
-        openable.snap.edge = tempEdge;
-        openable.snap.pos = firstPart ? openable.snap.pos! / pos : (openable.snap.pos! - pos) / (1 - pos);
-        if (firstPart && tempEdge.id2 !== id || !firstPart && tempEdge.id1 != id) {
-          openable.snap.pos = 1 - openable.snap.pos;
-          openable.snap.orientation = (openable.snap.orientation! + 1) % 2;
-        }
-      }
-    }
-    edge.snapOpenables.length = 0;
-    this.removeEdge(edge.id1, edge.id2);
-  },
-  reset: function () {
-    this.count = 0;
-    this.nodes = {};
-    this.edges = {};
-  },
-  nextEdgeToSegment: function (center: Point, p: Point): Point | null {
-    let result: Point | null = null;
-    let minDist: optionalNumber = null;
-    for (const outEdges of Object.values(this.edges)) {
-      for (const edge of Object.values(outEdges)) {
-        const node1 = this.nodes[edge.id1]!;
-        const node2 = this.nodes[edge.id2]!;
-
-        const intersectionPoint: Point | null = getIntersectionPoint(center, p, node1.p, node2.p);
-        if (intersectionPoint !== null) {
-          const dist = distance(intersectionPoint, p);
-          if (minDist === null || dist < minDist) {
-            minDist = dist;
-            result = intersectionPoint;
-          }
-        }
-      }
-    }
-    return result;
-  },
-  // p, the position to check; p is in node position space
-  closestNodeToClick: function (p: Point): optionalNumber {
-    let minDist: optionalNumber = null;
-    let minId: optionalNumber = null;
-    for (const node of Object.values(this.nodes)) {
-      const dist = distance(p, node.p);
-      if (minDist === null || dist < minDist) {
-        minDist = dist;
-        minId = node.id;
-      }
-    }
-    return minId;
-  },
-  // snap functionality
-  handleNodeToNodeSnap: function (node: CornerNode, p: Point, extendNode: boolean): boolean {
-    let minDist: optionalNumber = null;
-    for (const other of Object.values(this.nodes)) {
-      if (!extendNode && other.id === node.id) {
-        continue;
-      }
-      const dist = distance(other.p, projection.to(p));
-      if (dist < settings.value.nodeExtendSize && (minDist === null || dist < minDist)) {
-        minDist = dist;
-        node.delta = projection.from(other.p);
-        node.snap.x = other.id;
-        node.snap.y = other.id;
-
-        if (!extendNode) {
-          node.p = { x: other.p.x, y: other.p.y };
-        }
-      }
-    }
-    return minDist !== null;
-  },
-  handleNodeToEdgeSnap: function (node: CornerNode, p: Point, extendNode: boolean): boolean {
-    const clickPos = projection.to(p);
-
-    let minDist: optionalNumber = null;
-
-    for (const outEdges of Object.values(this.edges)) {
-      for (const edge of Object.values(outEdges)) {
-        if (!extendNode && (edge.id1 === node.id || edge.id2 === node.id)) {
-          continue;
-        }
-
-        const node1 = this.nodes[edge.id1];
-        const node2 = this.nodes[edge.id2];
-
-        if (node1 === undefined || node2 === undefined) { continue; }
-
-        const t =
-          ((node2.p.x - node1.p.x) * (clickPos.x - node1.p.x) + (node2.p.y - node1.p.y) * (clickPos.y - node1.p.y)) /
-          ((node2.p.x - node1.p.x) ** 2 + (node2.p.y - node1.p.y) ** 2);
-
-        if (t < 0 || t > 1) {
-          continue;
-        }
-        const dist = Math.abs(
-          ((node2.p.x - node1.p.x) * (node1.p.y - clickPos.y) - (node1.p.x - clickPos.x) * (node2.p.y - node1.p.y)) /
-          distance(node2.p, node1.p));
-        if (dist < settings.value.nodeExtendSize && (minDist === null || dist < minDist)) {
-          minDist = dist;
-
-          const proj = toNextNumber({
-            x: node1.p.x + t * (node2.p.x - node1.p.x),
-            y: node1.p.y + t * (node2.p.y - node1.p.y)
-          });
-
-          node.snap.edge = edge;
-          node.snap.pos = t;
-          node.delta = projection.from(proj);
-          if (!extendNode) {
-            node.p = proj;
-          }
-        }
-      }
-    }
-
-    if (minDist !== null) {
-      const axisDist = this.handleNodeToNeighborSnap(node, p, extendNode, false);
-
-      const node1 = this.nodes[node.snap.edge!.id1]!;
-      const node2 = this.nodes[node.snap.edge!.id2]!;
-
-      if (node.snap.x !== null &&
-        node.snap.x !== node1.id &&
-        node.snap.x !== node2.id &&
-        (node.snap.y === null ||
-          axisDist.x! <= axisDist.y! ||
-          node.snap.y === node1.id ||
-          node.snap.y === node2.id)) {
-        const otherNode = this.nodes[node.snap.x]!;
-        const otherPos = (otherNode.p.x - node1.p.x) / (node2.p.x - node1.p.x);
-        if (otherPos > 0 && otherPos < 1) {
-          const proj = toNextNumber({
-            x: otherNode.p.x,
-            y: node1.p.y + otherPos * (node2.p.y - node1.p.y),
-          });
-          node.snap.pos = otherPos;
-          node.delta = projection.from(proj);
-          if (!extendNode) {
-            node.p = proj;
-          }
-        }
-      } else if (node.snap.y !== null &&
-        node.snap.y !== node1.id &&
-        node.snap.y !== node2.id &&
-        (node.snap.x === null ||
-          axisDist.y! < axisDist.x! ||
-          node.snap.x === node1.id ||
-          node.snap.x === node2.id)) {
-        const otherNode = this.nodes[node.snap.y]!;
-        const otherPos = (otherNode.p.y - node1.p.y) / (node2.p.y - node1.p.y);
-        if (otherPos > 0 && otherPos < 1) {
-          const proj = toNextNumber({
-            x: node1.p.x + otherPos * (node2.p.x - node1.p.x),
-            y: otherNode.p.y,
-          });
-          node.snap.pos = otherPos;
-          node.delta = projection.from(proj);
-          if (!extendNode) {
-            node.p = proj;
-          }
-        }
-      } else {
-        node.snap.x = null;
-        node.snap.y = null;
-      }
-    }
-
-    return minDist !== null;
-  },
-  handleNodeToNeighborSnap: function (node: CornerNode, p: Point, extendNode: boolean, change: boolean): optionalPoint {
-    const clickPos = projection.to(p);
-    const minDist: optionalPoint = { x: null, y: null };
-    for (const other of Object.values(this.nodes)) {
-      if (!extendNode && other.id === node.id) {
-        continue;
-      }
-      const dist = { x: Math.abs(other.p.x - clickPos.x), y: Math.abs(other.p.y - clickPos.y) };
-      if (dist.x < settings.value.nodeExtendSize && (minDist.x === null || dist.x < minDist.x) && dist.x <= dist.y) {
-        minDist.x = dist.x;
-        if (change) {
-          node.delta.x = projection.from(other.p).x;
-          if (!extendNode) {
-            node.p.x = other.p.x;
-          }
-        }
-        node.snap.x = other.id;
-      } else if (dist.y < settings.value.nodeExtendSize && (minDist.y === null || dist.y < minDist.y) && dist.y < dist.x) {
-        minDist.y = dist.y;
-        if (change) {
-          node.delta.y = projection.from(other.p).y;
-          if (!extendNode) {
-            node.p.y = other.p.y;
-          }
-        }
-        node.snap.y = other.id;
-      }
-    }
-
-    return minDist;
-  },
-  handleNodeSnap: function (node: CornerNode, p: Point, extendNode: boolean) {
-    node.snap = { x: null, y: null, edge: null, pos: null };
-    if (this.handleNodeToNodeSnap(node, p, extendNode)) {
-      return;
-    }
-    if (this.handleNodeToEdgeSnap(node, p, extendNode)) {
-      return;
-    }
-    const minDist = this.handleNodeToNeighborSnap(node, p, extendNode, true);
-
-    // if no snapping happend
-    const proj = toNextNumber({
-      x: node.p.x + (p.x - node.delta.x) / projection.scale,
-      y: node.p.y + (p.y - node.delta.y) / projection.scale
-    });
-    if (minDist.x === null) {
-      node.snap.x = null;
-      if (!extendNode) {
-        node.p.x = proj.x;
-        node.delta.x = projection.from(proj).x;
-      } else {
-        node.delta.x = p.x;
-      }
-    }
-    if (minDist.y === null) {
-      node.snap.y = null;
-      if (!extendNode) {
-        node.p.y = proj.y;
-        node.delta.y = projection.from(proj).y;
-      } else {
-        node.delta.y = p.y;
-      }
-    }
-  },
-  getFaces: function (): CornerNode[][] {
-    let directedEdges: [number, number][] = [];
-
-    let allEdges: { [key: number]: number[] } = {};
-
-    for (const outEdges of Object.values(this.edges)) {
-      for (const edge of Object.values(outEdges)) {
-        directedEdges.push([edge.id1, edge.id2]);
-        directedEdges.push([edge.id2, edge.id1]);
-
-        allEdges[edge.id1] = allEdges[edge.id1] || [];
-        allEdges[edge.id2] = allEdges[edge.id2] || [];
-
-        allEdges[edge.id1]!.push(edge.id2);
-        allEdges[edge.id2]!.push(edge.id1);
-      }
-    }
-
-    let nextEdge: { [key: number]: { [key: number]: number } } = {};
-    Object.entries(allEdges).forEach(
-      ([id1S, outEdges]) => {
-        if (outEdges.length === 0) {
-          return;
-        }
-        // wtf; why can I not access the key as number here...
-        const id1 = Number(id1S);
-        const currNode = this.nodes[id1] as CornerNode;
-        outEdges.sort(
-          (other1: number, other2: number) => {
-            const otherNode1 = this.nodes[other1] as CornerNode;
-            const otherNode2 = this.nodes[other2] as CornerNode;
-            const angle1 = Math.atan2(otherNode1.p.y - currNode.p.y, otherNode1.p.x - currNode.p.x);
-            const angle2 = Math.atan2(otherNode2.p.y - currNode.p.y, otherNode2.p.x - currNode.p.x);
-            return angle1 - angle2;
-          }
-        );
-        nextEdge[id1] = nextEdge[id1] || {};
-        nextEdge[id1]![outEdges.at(0)!] = outEdges.at(outEdges.length - 1) as number;
-        for (let idx: number = 1; idx < outEdges.length; ++idx) {
-          const id2 = outEdges[idx] as number;
-          nextEdge[id1]![id2] = outEdges.at(idx - 1) as number;
-        }
-      }
-    );
-
-    let result: CornerNode[][] = [];
-    while (directedEdges.length > 0) {
-      let currFace = result.at(result.push([]) - 1) as CornerNode[];
-      const [id1, id2] = directedEdges.at(0) as [number, number];
-      let currNode = this.nodes[id1] as CornerNode;
-      let nextNode = this.nodes[id2] as CornerNode;
-
-      currFace.push(currNode);
-      let removeIdx: number = -1;
-      while ((removeIdx = directedEdges.findIndex((val) => val.at(0) === currNode.id && val.at(1) === nextNode.id)) !== -1) {
-        currFace.push(nextNode);
-
-        directedEdges.splice(removeIdx, 1);
-
-        const nextId = nextEdge[nextNode.id]![currNode.id] as number;
-        currNode = nextNode;
-        nextNode = this.nodes[nextId] as CornerNode;
-      }
-    }
-
-    return result;
-  },
-  // e, the click position; e is in screen space
-  handleClick: function (e: Point): boolean {
-    let selected = false;
-    const clickPos = projection.to(e);
-    const nodeId = this.closestNodeToClick(clickPos);
-    if (nodeId !== null) {
-      const node = this.nodes[nodeId];
-      if (node !== undefined) {
-        const dist = distance(node.p, clickPos);
-        if (dist <= settings.value.nodeTransSize) {
-          selected = true;
-          node.translate = true;
-          node.delta.x = e.x;
-          node.delta.y = e.y;
-        } else if (dist <= settings.value.nodeExtendSize) {
-          selected = true;
-          node.extend = true;
-          node.delta.x = e.x;
-          node.delta.y = e.y;
-        }
-      }
-    }
-    return selected;
-  },
-  handleMove: function (e: Point): boolean {
-    let changed = false;
-    for (const node of Object.values(this.nodes)) {
-      if (node.translate) {
-        changed = true;
-
-        this.handleNodeSnap(node, e, false);
-
-        for (const outEdges of Object.values(this.edges)) {
-          for (const edge of Object.values(outEdges)) {
-            if (edge.id1 === node.id || edge.id2 === node.id) {
-              const node1 = this.nodes[edge.id1];
-              const node2 = this.nodes[edge.id2];
-
-              if (node1 === undefined || node2 === undefined) { continue; }
-
-              for (const openable of edge.snapOpenables) {
-                const proj = {
-                  x: node1.p.x + openable.snap.pos! * (node2.p.x - node1.p.x),
-                  y: node1.p.y + openable.snap.pos! * (node2.p.y - node1.p.y)
-                };
-                const shift = { x: proj.x - openable.dim.w / 2, y: proj.y };
-                openable.p = shift;
-                openable.angle = toDeg(Math.atan2(node2.p.y - node1.p.y, node2.p.x - node1.p.x)) + openable.snap.orientation! * 180;
-              }
-            }
-          }
-        }
-
-        handleRemove(e, node);
-      } else if (node.extend) {
-        changed = true;
-
-        this.handleNodeSnap(node, e, true);
-
-        handleRemove(e, node);
-      }
-    }
-    return changed;
-  },
-  handleUnclick: function (e: Point) {
-    for (const node of Object.values(this.nodes)) {
-      if (node.remove && node.translate) {
-        this.removeNode(node.id);
-        continue;
-      } else if (node.translate) {
-        if (node.snap.x !== null && node.snap.y !== null && node.snap.x === node.snap.y && node.snap.x !== node.id) {
-          this.mergeNodes(node.id, node.snap.x);
-        } else if (node.snap.edge !== null && node.snap.pos !== null) {
-          this.bisect(node.id, node.snap.edge, node.snap.pos);
-        }
-      } else if (node.extend && !node.remove) {
-        if (node.snap.x !== null && node.snap.y !== null && node.snap.x === node.snap.y) {
-          if (node.snap.x !== node.id) {
-            this.addEdge(node.id, node.snap.x);
-          }
-        } else {
-          const newId = this.addNode(
-            toNextNumber(projection.to({
-              x: node.snap.x === null && node.snap.edge === null ? e.x : node.delta.x,
-              y: node.snap.y === null && node.snap.edge === null ? e.y : node.delta.y
-            })));
-          this.addEdge(node.id, newId);
-          if (node.snap.edge !== null && node.snap.pos !== null) {
-            this.bisect(newId, node.snap.edge, node.snap.pos);
-          }
-        }
-      }
-      node.remove = false;
-      node.translate = false;
-      node.extend = false;
-      node.snap = { x: null, y: null, edge: null, pos: null };
-      node.delta = { x: 0, y: 0 };
-    }
-  },
-  draw: function () {
-    if (settings.value.showRoomSize) {
-      this.drawFaces();
-    }
-
-    this.drawEdges();
-
-    if (settings.value.mode === Mode.Room) {
-      this.drawNodes();
-
-      this.drawExtend();
-    }
-  },
-  drawFaces: function () {
-    const faces = this.getFaces();
-
-    ctx.value.fillStyle = "lightgray";
-    ctx.value.textAlign = "center";
-    ctx.value.textBaseline = "middle";
-
-    for (const face of faces) {
-      if (face.length < 2) { continue; }
-
-      let area: number = 0;
-      let mid: Point = { x: 0, y: 0 };
-      let prevP: Point = face.at(0)!.p;
-      for (let i = 1; i < face.length; ++i) {
-        const currP: Point = face.at(i)!.p;
-        area += getTrapezoidArea(prevP, currP);
-        mid = {
-          x: mid.x + (prevP.x + currP.x) * (prevP.x * currP.y - currP.x * prevP.y),
-          y: mid.y + (prevP.y + currP.y) * (prevP.x * currP.y - currP.x * prevP.y),
-        };
-        prevP = currP;
-      }
-      mid = {
-        x: mid.x / (6 * area),
-        y: mid.y / (6 * area),
-      }
-      area /= 1000 * 1000;
-
-      if (area < 1) {
-        setFontSize(18, false, true);
-      } else {
-        setFontSize(22, false, true);
-      }
-      if (area <= 0) { continue; }
-
-      ctx.value.fillText(area.toFixed(1) + "m²", mid.x, mid.y);
-    }
-    restoreDefaultContext()
-  },
-  drawEdges: function () {
-    for (const outEdges of Object.values(this.edges)) {
-      for (const edge of Object.values(outEdges)) {
-        const node1 = this.nodes[edge.id1];
-        const node2 = this.nodes[edge.id2];
-
-        if (node1 === undefined || node2 === undefined) { continue; }
-
-        if ((node1.remove && node1.translate) || (node2.remove && node2.translate)) {
-          ctx.value.fillStyle = "red";
-          ctx.value.strokeStyle = "red";
-        }
-
-        ctx.value.beginPath();
-        ctx.value.moveTo(node1.p.x, node1.p.y);
-
-        // uncomment for gaps in windows (sort openables by pos before)
-        // const dist = distance(node1.p, node2.p);
-        // for (const openable of edge.snapOpenables) {
-        //     const relWidth = openable.dim.w / dist;
-        //     const t1 = Math.max(0, openable.snap.pos - relWidth / 2);
-        //     const t2 = Math.min(1, openable.snap.pos + relWidth / 2);
-
-        //     ctx.lineTo(node1.p.x + t1 * (node2.p.x - node1.p.x), node1.p.y + t1 * (node2.p.y - node1.p.y));
-        //     ctx.moveTo(node1.p.x + t2 * (node2.p.x - node1.p.x), node1.p.y + t2 * (node2.p.y - node1.p.y));
-        // }
-
-        ctx.value.lineTo(node2.p.x, node2.p.y);
-        ctx.value.stroke();
-
-        if ((!node1.remove && node1.translate) || (!node2.remove && node2.translate)) {
-          const node = node1.translate ? node2 : node1;
-          const other = node1.translate ? node1 : node2;
-          const dist = distance(node1.p, node2.p);
-          const ul = { x: -projection.p.x / projection.scale, y: -projection.p.y / projection.scale };
-          const br = projection.to({ x: canvas.value.width, y: canvas.value.height });
-
-          const nodeScaling = settings.value.nodeTransSize / dist;
-          const nodeBorder = {
-            x: node.p.x * (1 - nodeScaling) + other.p.x * nodeScaling,
-            y: node.p.y * (1 - nodeScaling) + other.p.y * nodeScaling,
-          };
-          const otherBorder = {
-            x: other.p.x * (1 - nodeScaling) + node.p.x * nodeScaling,
-            y: other.p.y * (1 - nodeScaling) + node.p.y * nodeScaling,
-          };
-
-          const borderPos = {
-            x: Math.min(Math.max(nodeBorder.x, ul.x), br.x),
-            y: Math.min(Math.max(nodeBorder.y, ul.y), br.y)
-          };
-
-          const sx = nodeBorder.x === otherBorder.x ? 1 : (borderPos.x - otherBorder.x) / (nodeBorder.x - otherBorder.x);
-          const sy = nodeBorder.y === otherBorder.y ? 1 : (borderPos.y - otherBorder.y) / (nodeBorder.y - otherBorder.y);
-
-          const borderScaling = Math.min(sx, sy);
-          const scaling = Math.min(sx, sy) / 2;
-
-          setFontSize(20, false);
-
-          ctx.value.save();
-          const b = {
-            x: otherBorder.x * (1 - borderScaling) + nodeBorder.x * borderScaling,
-            y: otherBorder.y * (1 - borderScaling) + nodeBorder.y * borderScaling,
-          };
-          const c = {
-            x: otherBorder.x * (1 - scaling) + nodeBorder.x * scaling,
-            y: otherBorder.y * (1 - scaling) + nodeBorder.y * scaling,
-          };
-          ctx.value.translate(c.x, c.y);
-          const angle = Math.atan2(node.p.y - other.p.y, node.p.x - other.p.x);
-
-          ctx.value.rotate(angle < -Math.PI / 2 || angle > Math.PI / 2 ? angle + Math.PI : angle);
-          ctx.value.fillText(dist.toFixed(0) + "mm", 0, 0, distance(otherBorder, b));
-
-          ctx.value.restore();
-        } else if (settings.value.showEdgeLabels) {
-          const dist = distance(node1.p, node2.p);
-
-          setFontSize(18, false);
-
-          ctx.value.save();
-          const c = {
-            x: (node1.p.x + node2.p.x) / 2,
-            y: (node1.p.y + node2.p.y) / 2,
-          };
-          ctx.value.translate(c.x, c.y);
-          const angle = Math.atan2(node2.p.y - node1.p.y, node2.p.x - node1.p.x);
-
-          ctx.value.rotate(angle < -Math.PI / 2 || angle > Math.PI / 2 ? angle + Math.PI : angle);
-          drawDistance(0, 0, dist, 1, "m", 1000);
-          ctx.value.restore();
-        }
-
-        restoreDefaultContext();
-      }
-    }
-  },
-  drawNodes: function () {
-    for (const node of Object.values(this.nodes)) {
-      if (node.remove && node.translate) {
-        ctx.value.fillStyle = "red";
-        ctx.value.strokeStyle = "red";
-      }
-
-      // stroke
-      ctx.value.beginPath();
-      ctx.value.arc(node.p.x, node.p.y, settings.value.nodeExtendSize, 0, 2 * Math.PI);
-      ctx.value.stroke();
-
-      // fill
-      ctx.value.beginPath();
-      ctx.value.arc(node.p.x, node.p.y, settings.value.nodeTransSize, 0, 2 * Math.PI);
-      ctx.value.fill();
-
-      restoreDefaultContext();
-    }
-  },
-  drawExtend: function () {
-    for (const node of Object.values(this.nodes)) {
-      if (node.extend) {
-        const newPos = projection.to(node.delta);
-        if (node.remove) {
-          ctx.value.fillStyle = "red";
-          ctx.value.strokeStyle = "red";
-        } else {
-          ctx.value.fillStyle = "gray";
-          ctx.value.strokeStyle = "gray";
-        }
-        // stroke
-        ctx.value.beginPath();
-        ctx.value.arc(newPos.x, newPos.y, settings.value.nodeExtendSize, 0, 2 * Math.PI);
-        ctx.value.stroke();
-
-        // fill
-        ctx.value.beginPath();
-        ctx.value.arc(newPos.x, newPos.y, settings.value.nodeTransSize, 0, 2 * Math.PI);
-        ctx.value.fill();
-
-        // line
-        ctx.value.moveTo(node.p.x, node.p.y);
-        ctx.value.lineTo(newPos.x, newPos.y);
-        ctx.value.stroke();
-
-        if (!node.remove) {
-          setFontSize(20, false);
-
-          const dist = distance(node.p, newPos);
-          ctx.value.save();
-          const c = {
-            x: (node.p.x + newPos.x) / 2,
-            y: (node.p.y + newPos.y) / 2,
-          };
-          ctx.value.translate(c.x, c.y);
-          const angle = Math.atan2(node.p.y - newPos.y, node.p.x - newPos.x);
-
-          ctx.value.rotate(angle < -Math.PI / 2 || angle > Math.PI / 2 ? angle + Math.PI : angle);
-          ctx.value.fillText(dist.toFixed(0) + "mm", 0, 0, dist - 2 * settings.value.nodeTransSize);
-
-          ctx.value.restore();
-        }
-      }
-
-      restoreDefaultContext();
-    }
-  },
-  toJSON: function (): GraphJSON {
-    return { nodes: this.nodes, edges: this.edges };
-  },
-};
 
 type FloorplanImageJSON = { image: string, distance: number, node1: CornerJSON, node2: CornerJSON };
 interface FloorplanImage {
@@ -2381,7 +1531,7 @@ function mouseDoubleClick(e: Point) {
   if (settings.value.mode === Mode.Furniture) {
     // add furniture double click
   } else if (settings.value.mode === Mode.Room) {
-    graph.addNode(toNextNumber(projection.to(e)));
+    graph.value.addNode(toNextNumber(projection.to(e)));
   }
 
   drawMain();
@@ -2411,7 +1561,7 @@ function mouseDown(e: Point) {
       }
     }
   } else if (settings.value.mode === Mode.Room) {
-    if (graph.handleClick(e)) {
+    if (graph.value.handleClick(e)) {
       selected = true;
     }
 
@@ -2470,7 +1620,7 @@ function mouseMove(e: Point) {
       }
     }
   } else if (settings.value.mode === Mode.Room) {
-    if (graph.handleMove(e)) {
+    if (graph.value.handleMove(e)) {
       changed = true;
     }
     for (const openable of openables) {
@@ -2506,7 +1656,7 @@ function mouseUp(e: Point) {
   } else if (settings.value.mode === Mode.Furniture) {
     mouseUpForMovables(furniture);
   } else if (settings.value.mode === Mode.Room) {
-    graph.handleUnclick(e);
+    graph.value.handleUnclick(e);
     mouseUpForMovables(openables);
     mouseUpForMovables(labels);
   }
@@ -2535,7 +1685,7 @@ function loadOpenable(openable: OpenableJSON, graph: Graph): Openable {
   newOpenable.snap.pos = openable.snap.pos;
   newOpenable.snap.orientation = openable.snap.orientation;
   if (openable.snap.edge) {
-    newOpenable.snap.edge = graph.edges[openable.snap.edge.id1]![openable.snap.edge.id2]!;
+    newOpenable.snap.edge = graph.value.edges[openable.snap.edge.id1]![openable.snap.edge.id2]!;
     newOpenable.snap.edge.snapOpenables.push(newOpenable);
   }
 
@@ -2582,7 +1732,7 @@ function loadFloorplan(content: string, fileName: string) {
     return;
   }
 
-  graph.reset();
+  graph.value.reset();
   labels.length = 0;
   openables.length = 0;
   furniture.length = 0;
@@ -2595,14 +1745,14 @@ function loadFloorplan(content: string, fileName: string) {
       if (maxId < node.id) {
         maxId = node.id;
       }
-      graph.nodes[node.id] = new CornerNode(node.id, node.p.x, node.p.y);
+      graph.value.nodes[node.id] = new CornerNode(node.id, node.p.x, node.p.y);
     }
-    graph.count = maxId + 1;
+    graph.value.count = maxId + 1;
 
     for (const i in floorPlanner.graph.edges) {
       for (const j in floorPlanner.graph.edges[i]) {
         const edge = floorPlanner.graph.edges[i][j] as EdgeJSON;
-        graph.addEdge(edge.id1, edge.id2);
+        graph.value.addEdge(edge.id1, edge.id2);
       }
     }
   }
@@ -2670,66 +1820,10 @@ function loadFloorplan(content: string, fileName: string) {
 }
 
 // A movable is an abstract object that can be translated and rotated on the canvas
-type MovableJSON = { type: MovableType, stroke: string, fill: string };
-class Movable {
-  type: MovableType;
-  delta: Point;
-  translate: boolean;
-  rotate: boolean;
-  remove: boolean;
 
-  stroke: string;
-  fill: string;
 
-  constructor(type: MovableType) {
-    this.type = type;
-    this.delta = {
-      x: 0,
-      y: 0
-    };
-    this.translate = false;
-    this.rotate = false;
-    this.remove = false;
 
-    this.stroke = "black";
-    this.fill = "";
-  }
 
-  getFill(isDisabled: boolean, highlight: boolean = false): string {
-    return this.remove ? "red" : isDisabled ? "gray" : highlight && (this.translate || this.rotate) ? "green" : this.fill;
-  }
-  getStroke(isDisabled: boolean, highlight: boolean = false): string {
-    return this.remove ? "red" : isDisabled ? "gray" : highlight && (this.translate || this.rotate) ? "green" : this.stroke;
-  }
-
-  setStyle(isDisabled: boolean, highlight: boolean = false) {
-    ctx.value.fillStyle = this.getFill(isDisabled, highlight);
-    ctx.value.strokeStyle = this.getStroke(isDisabled, highlight);
-  }
-
-  movableToJSON(): MovableJSON {
-    return { type: this.type, stroke: this.stroke, fill: this.fill };
-  }
-}
-
-// snap utility
-function snap(angle: number, value: number, diff: number): boolean {
-  return angle % value < diff || angle % value > value - diff;
-}
-
-function handleSnap(mov: Rectangle | Ellipse, values: number[], angle: number, diff: number): boolean {
-  for (const value of values) {
-    if (snap(angle, value, diff)) {
-      mov.angle = value % 360;
-      mov.delta = projection.from(rotate(mov.center(),
-        mov.angleSnapPoint(),
-        value % 360
-      ));
-      return true;
-    }
-  }
-  return false;
-}
 
 function mouseUpForMovables(movables: (Rectangle | Circle | Ellipse | Openable)[]) {
   for (let i = movables.length - 1; i >= 0; --i) {
@@ -2757,553 +1851,12 @@ function mouseUpForMovables(movables: (Rectangle | Circle | Ellipse | Openable)[
 }
 
 // An openable is a door or window, it can be moved and rotated
-type OpenableSnapType = { edge: Edge | null, pos: optionalNumber, orientation: optionalNumber };
-type OpenableJSON = { mov: MovableJSON, openableType: OpenableType, p: Point, dim: Dim, angle: number, snap: OpenableSnapType };
-class Openable extends Movable {
-  openableType: OpenableType;
-  p: Point;
-  dim: Dim;
-  angle: number;
-  snap: OpenableSnapType;
 
-  constructor(type: OpenableType, x: number, y: number, w: number, h: number) {
-    super(MovableType.Openable);
-    this.openableType = type;
-    this.p = {
-      x,
-      y
-    };
-    this.dim = {
-      w,
-      h
-    };
-    this.angle = 0;
-    this.snap = {
-      edge: null,
-      pos: null,
-      orientation: null,
-    }
-  }
 
-  center(): Point {
-    return {
-      x: this.p.x + this.dim.w / 2,
-      y: this.p.y
-    };
-  }
-
-  handle(): Point {
-    return {
-      x: this.p.x,
-      y: this.p.y - this.dim.h
-    }
-  }
-
-  pointInRotCircle(other: Point, radius: number): boolean {
-    const pRot = rotate(this.center(), other, -this.angle);
-    return pointInCircle(translate(this.handle(), { w: radius, h: radius }), radius, pRot);
-  }
-
-  getRotateSize(): number {
-    if (this.dim.w / 2 <= settings.value.furnitureRotateSize || this.dim.h / 2 <= settings.value.furnitureRotateSize) {
-      return Math.min(this.dim.w, this.dim.h) / 2;
-    }
-    return settings.value.furnitureRotateSize;
-  }
-
-  pointInRotRectangle(other: Point): boolean {
-    const pRot = rotate(this.center(), other, -this.angle);
-    const h = this.handle();
-    if (h.x <= pRot.x && h.x + this.dim.w >= pRot.x && h.y <= pRot.y && h.y + this.dim.h >= pRot.y) {
-      return true;
-    }
-    return false;
-  }
-
-  handleClick(e: Point): boolean {
-    if (this.snap.edge === null && this.pointInRotCircle(projection.to(e), this.getRotateSize() / 2)) {
-      this.rotate = true;
-      this.delta.x = e.x;
-      this.delta.y = e.y;
-      return true;
-    } else if (this.pointInRotRectangle(projection.to(e))) {
-      this.translate = true;
-      this.delta.x = e.x;
-      this.delta.y = e.y;
-      return true;
-    }
-    return false;
-  }
-
-  handleSnap(values: number[], angle: number, diff: number): boolean {
-    for (const value of values) {
-      if (snap(angle, value, diff)) {
-        this.angle = value % 360;
-        this.delta = projection.from(rotate(this.center(),
-          { x: this.p.x, y: this.p.y - this.dim.h },
-          value % 360
-        ));
-        return true;
-      }
-    }
-    return false;
-  }
-
-  handleEdgeSnap(p: Point, graph: Graph) {
-    const clickPos = projection.to(p);
-
-    let minDist: optionalNumber = null;
-    let minEdge: Edge | null = null;
-    let minT: optionalNumber = null;
-    let minOrientation: optionalNumber = null;
-
-    for (const outEdges of Object.values(graph.edges)) {
-      for (const edge of Object.values(outEdges)) {
-        const node1 = graph.nodes[edge.id1] as CornerNode;
-        const node2 = graph.nodes[edge.id2] as CornerNode;
-
-        const t =
-          ((node2.p.x - node1.p.x) * (clickPos.x - node1.p.x) + (node2.p.y - node1.p.y) * (clickPos.y - node1.p.y)) /
-          ((node2.p.x - node1.p.x) ** 2 + (node2.p.y - node1.p.y) ** 2);
-
-        if (t < 0 || t > 1) {
-          continue;
-        }
-        const orientationDist =
-          ((node2.p.x - node1.p.x) * (node1.p.y - clickPos.y) - (node1.p.x - clickPos.x) * (node2.p.y - node1.p.y)) /
-          distance(node2.p, node1.p);
-        const dist = Math.abs(orientationDist);
-        if (dist < settings.value.nodeExtendSize && (minDist === null || dist < minDist)) {
-          minDist = dist;
-          minEdge = edge;
-          minT = t;
-          minOrientation = Math.sign(orientationDist) < 0 ? 1 : 0;
-
-          const proj = {
-            x: node1.p.x + t * (node2.p.x - node1.p.x),
-            y: node1.p.y + t * (node2.p.y - node1.p.y)
-          };
-
-          const shift = { x: proj.x - this.dim.w / 2, y: proj.y };
-          this.p = shift;
-          this.delta = projection.from(proj);
-          this.angle = toDeg(Math.atan2(node2.p.y - node1.p.y, node2.p.x - node1.p.x)) + minOrientation * 180;
-        }
-      }
-    }
-
-    this.snap.pos = minT;
-    this.snap.orientation = minOrientation;
-
-    if (this.snap.edge !== null && this.snap.edge !== minEdge) {
-      for (let i = this.snap.edge.snapOpenables.length - 1; i >= 0; --i) {
-        if (this.snap.edge.snapOpenables[i] === this) {
-          this.snap.edge.snapOpenables.splice(i, 1);
-          break;
-        }
-      }
-    }
-    if (this.snap.edge !== minEdge) {
-      this.snap.edge = minEdge;
-      if (this.snap.edge !== null) {
-        this.snap.edge.snapOpenables.push(this);
-      }
-    }
-
-    if (minDist === null) {
-      this.snap.edge = null;
-      this.snap.pos = null;
-      this.snap.orientation = null;
-
-      this.p.x += (p.x - this.delta.x) / projection.scale;
-      this.p.y += (p.y - this.delta.y) / projection.scale;
-
-      this.delta.x = p.x;
-      this.delta.y = p.y;
-    }
-  }
-
-  handleMove(e: Point, graph: Graph): boolean {
-    let changed = false;
-    if (this.translate) {
-      changed = true;
-
-      this.handleEdgeSnap(e, graph);
-
-      handleRemove(e, this);
-    } else if (this.rotate) {
-      changed = true;
-      const a = angleBetweenPoints(projection.from(this.center()),
-        this.delta,
-        e);
-      if (!this.handleSnap([360, 270, 180, 90], Math.abs((this.angle + a + 360) % 360), settings.value.furnitureSnapAngle)) {
-        this.angle += a;
-
-        this.delta.x = e.x;
-        this.delta.y = e.y;
-      }
-    }
-
-    return changed;
-  }
-
-  draw() {
-    ctx.value.save();
-
-    const c = this.center();
-
-    ctx.value.translate(c.x, c.y);
-    ctx.value.rotate(toRad(this.angle));
-
-    this.setStyle(settings.value.mode !== Mode.Room);
-
-    switch (this.openableType) {
-      case OpenableType.Left: {
-        ctx.value.beginPath();
-        ctx.value.moveTo(-this.dim.w / 2, 0);
-        ctx.value.lineTo(-this.dim.w / 2, this.dim.w);
-        ctx.value.stroke();
-
-        ctx.value.beginPath();
-        ctx.value.arc(-this.dim.w / 2, 0, this.dim.w, 0, Math.PI / 2);
-        ctx.value.stroke();
-        break;
-      }
-      case OpenableType.Right: {
-        ctx.value.beginPath();
-        ctx.value.moveTo(this.dim.w / 2, 0);
-        ctx.value.lineTo(this.dim.w / 2, this.dim.w);
-        ctx.value.stroke();
-
-        ctx.value.beginPath();
-        ctx.value.arc(this.dim.w / 2, 0, this.dim.w, Math.PI / 2, Math.PI);
-        ctx.value.stroke();
-        break;
-      }
-      case OpenableType.Double: {
-        ctx.value.beginPath();
-        ctx.value.moveTo(-this.dim.w / 2, 0);
-        ctx.value.lineTo(-this.dim.w / 2, this.dim.w / 2);
-        ctx.value.stroke();
-
-        ctx.value.beginPath();
-        ctx.value.arc(-this.dim.w / 2, 0, this.dim.w / 2, 0, Math.PI / 2);
-        ctx.value.stroke();
-
-        ctx.value.beginPath();
-        ctx.value.moveTo(this.dim.w / 2, 0);
-        ctx.value.lineTo(this.dim.w / 2, this.dim.w / 2);
-        ctx.value.stroke();
-
-        ctx.value.beginPath();
-        ctx.value.arc(this.dim.w / 2, 0, this.dim.w / 2, Math.PI / 2, Math.PI);
-        ctx.value.stroke();
-        break;
-      }
-    }
-
-    const rotateSize = this.getRotateSize();
-
-    if (settings.value.mode === Mode.Room) {
-      ctx.value.beginPath();
-      ctx.value.rect(-this.dim.w / 2, -this.dim.h, this.dim.w, this.dim.h);
-      ctx.value.stroke();
-
-      if (this.snap.edge === null) {
-        ctx.value.beginPath();
-        ctx.value.arc(
-          -this.dim.w / 2 + rotateSize / 2,
-          -this.dim.h + rotateSize / 2,
-          rotateSize / 2,
-          0,
-          2 * Math.PI
-        );
-        ctx.value.stroke();
-      }
-    }
-
-    if (this.translate || this.rotate) {
-      setFontSize(rotateSize * 2);
-
-      ctx.value.beginPath();
-      drawDistance(0, -this.dim.h + rotateSize * 2, this.dim.w, null, "mm");
-      ctx.value.stroke();
-
-      if (this.snap.edge !== null && this.snap.pos !== null && this.snap.orientation !== null) {
-        const node1 = graph.nodes[this.snap.edge.id1] as CornerNode;
-        const node2 = graph.nodes[this.snap.edge.id2] as CornerNode;
-
-        const dist: number = distance(node1.p, node2.p);
-        const dist1: number = dist * this.snap.pos - this.dim.w / 2;
-        const dist2: number = dist * (1 - this.snap.pos) - this.dim.w / 2;
-
-        if (dist1 > 0) {
-          ctx.value.textAlign = this.snap.orientation === 0 ? "right" : "left";
-          ctx.value.beginPath();
-          drawDistance((this.snap.orientation - 1 / 2) * this.dim.w, -this.dim.h + rotateSize * 2, dist1, 0, "mm");
-          ctx.value.stroke();
-        }
-
-        if (dist2 > 0) {
-          ctx.value.textAlign = this.snap.orientation === 1 ? "right" : "left";
-          ctx.value.beginPath();
-          drawDistance((-this.snap.orientation + 1 / 2) * this.dim.w, -this.dim.h + rotateSize * 2, dist2, 0, "mm");
-          ctx.value.stroke();
-        }
-      }
-    }
-
-    ctx.value.restore();
-  }
-
-  toJSON(): OpenableJSON {
-    return { mov: super.movableToJSON(), openableType: this.openableType, p: this.p, dim: this.dim, angle: this.angle, snap: this.snap };
-  }
-}
 
 // A generalized rectangle with multiple segments of different dimensions, it can be moved and rotated
-type RectangleJSON = { mov: MovableJSON, name: string, p: Point, dims: Dim[], angle: number };;
-class Rectangle extends Movable {
-  name: string;
-  p: Point;
-  dims: Dim[];
-  angle: number;
 
-  constructor(name: string, type: MovableType, x: number, y: number, w: number, h: number) {
-    super(type);
-    this.name = name;
-    this.p = {
-      x,
-      y
-    };
-    this.dims = [{
-      w,
-      h
-    }];
-    this.angle = 0;
-  }
 
-  getMaxDim(): Dim {
-    let result = { w: 0, h: 0 };
-    for (const dim of this.dims) {
-      result.w += dim.w;
-      result.h = Math.max(result.h, dim.h);
-    }
-    return result;
-  }
-
-  getMinDim(): Dim {
-    let result = { w: 0, h: Number.MAX_VALUE };
-    for (const dim of this.dims) {
-      result.w += dim.w;
-      result.h = Math.min(result.h, dim.h);
-    }
-    return result;
-  }
-
-  center(): Point {
-    const maxDim = this.getMaxDim();
-    return {
-      x: this.p.x + maxDim.w / 2,
-      y: this.p.y + maxDim.h / 2
-    };
-  }
-
-  pointInRotCircle(other: Point, radius: number): boolean {
-    const pRot = rotate(this.center(), other, -this.angle);
-    return pointInCircle(translate(this.p, { w: radius, h: radius }), radius, pRot);
-  }
-
-  getRotateSize(): number {
-    const minDim = this.getMinDim();
-    if (minDim.w / 2 <= settings.value.furnitureRotateSize || minDim.h / 2 <= settings.value.furnitureRotateSize) {
-      return Math.min(minDim.w, minDim.h) / 2;
-    }
-    return settings.value.furnitureRotateSize;
-  }
-
-  pointInRotRectangle(other: Point): boolean {
-    const pRot = rotate(this.center(), other, -this.angle);
-    let currX = this.p.x;
-    for (const dim of this.dims) {
-      if (currX <= pRot.x && currX + dim.w >= pRot.x && this.p.y <= pRot.y && this.p.y + dim.h >= pRot.y) {
-        return true;
-      }
-      currX += dim.w;
-    }
-    return false;
-  }
-
-  setFontSize() {
-    setFontSize(1);
-    const textDim = ctx.value.measureText(this.name);
-    const minDim = this.getMinDim();
-    setFontSize(Math.min(Math.min(160, minDim.h), minDim.w / textDim.width));
-  }
-
-  angleSnapPoint(): Point {
-    return this.p;
-  }
-
-  handleClick(e: Point): boolean {
-    if (this.pointInRotCircle(projection.to(e), this.getRotateSize() / 2)) {
-      this.rotate = true;
-      this.delta.x = e.x;
-      this.delta.y = e.y;
-      return true;
-    } else if (this.pointInRotRectangle(projection.to(e))) {
-      this.translate = true;
-      this.delta.x = e.x;
-      this.delta.y = e.y;
-      return true;
-    }
-    return false;
-  }
-
-  handleMove(e: Point): boolean {
-    let changed = false;
-    if (this.translate) {
-      changed = true;
-
-      this.p.x += (e.x - this.delta.x) / projection.scale;
-      this.p.y += (e.y - this.delta.y) / projection.scale;
-
-      this.delta.x = e.x;
-      this.delta.y = e.y;
-
-      handleRemove(e, this);
-    } else if (this.rotate) {
-      changed = true;
-      const a = angleBetweenPoints(projection.from(this.center()),
-        this.delta,
-        e);
-      if (!handleSnap(this, [360, 270, 180, 90], Math.abs((this.angle + a + 360) % 360), settings.value.furnitureSnapAngle)) {
-        this.angle += a;
-
-        this.delta.x = e.x;
-        this.delta.y = e.y;
-      }
-    }
-
-    return changed;
-  }
-
-  draw() {
-    ctx.value.save();
-
-    const c = this.center();
-    const maxDim = this.getMaxDim();
-    const minDim = this.getMinDim();
-
-    ctx.value.translate(c.x, c.y);
-    ctx.value.rotate(toRad(this.angle));
-
-    this.setStyle(settings.value.mode === Mode.Room, true);
-
-    if (this.dims.length > 0) {
-      ctx.value.beginPath();
-
-      let currX = -maxDim.w / 2;
-      let currY = -maxDim.h / 2;
-
-      let prevDim: Dim | null = null;
-      for (const dim of this.dims) {
-        if (prevDim !== null) {
-          currY += dim.h - prevDim.h;
-          ctx.value.lineTo(currX, currY);
-          currX += dim.w;
-          ctx.value.lineTo(currX, currY);
-        } else {
-          ctx.value.moveTo(currX, currY);
-          currY += dim.h;
-          ctx.value.lineTo(currX, currY);
-          currX += dim.w;
-          ctx.value.lineTo(currX, currY);
-        }
-        prevDim = dim;
-      }
-
-      currY = -maxDim.h / 2;
-      ctx.value.lineTo(currX, currY);
-      ctx.value.closePath();
-
-      ctx.value.stroke();
-    }
-
-    ctx.value.beginPath();
-
-    this.setFontSize();
-    ctx.value.textBaseline = "middle";
-    ctx.value.fillText(this.name, 0, - maxDim.h / 2 + minDim.h / 2, minDim.w);
-    ctx.value.textBaseline = "alphabetic";
-
-    const rotateSize = this.getRotateSize();
-
-    if (settings.value.mode === Mode.Furniture) {
-      ctx.value.beginPath();
-      ctx.value.arc(
-        -maxDim.w / 2 + rotateSize / 2,
-        -maxDim.h / 2 + rotateSize / 2,
-        rotateSize / 2,
-        0,
-        2 * Math.PI
-      );
-      ctx.value.stroke();
-    }
-
-    if (this.translate || this.rotate) {
-      setFontSize(rotateSize);
-
-      ctx.value.beginPath();
-
-      ctx.value.moveTo(-maxDim.w / 2, -maxDim.h / 2 + rotateSize);
-      ctx.value.lineTo(-maxDim.w / 2 + maxDim.w, -maxDim.h / 2 + rotateSize);
-      drawDistance(0, -maxDim.h / 2 + rotateSize, maxDim.w, null, "mm");
-
-      ctx.value.moveTo(-maxDim.w / 2 + rotateSize, -maxDim.h / 2);
-      ctx.value.lineTo(-maxDim.w / 2 + rotateSize, -maxDim.h / 2 + maxDim.h);
-
-      ctx.value.translate(-maxDim.w / 2 + rotateSize, 0);
-      ctx.value.rotate(toRad(-90));
-      drawDistance(0, 0, maxDim.h, null, "mm");
-
-      ctx.value.stroke();
-    }
-
-    ctx.value.restore();
-
-    this.drawWallDistances();
-    restoreDefaultContext();
-  }
-
-  drawWallDistances() {
-    if (this.translate || this.rotate) {
-      ctx.value.save();
-
-      this.setStyle(settings.value.mode === Mode.Room, true);
-      const rotateSize = this.getRotateSize();
-      setFontSize(rotateSize * 1.5);
-
-      const center = this.center();
-      const maxDim = this.getMaxDim();
-
-      // right
-      drawDistanceToNextWall(center, rotate(center, { x: center.x + maxDim.w / 2, y: center.y }, this.angle));
-      // left
-      drawDistanceToNextWall(center, rotate(center, { x: center.x - maxDim.w / 2, y: center.y }, this.angle));
-      // top
-      drawDistanceToNextWall(center, rotate(center, { x: center.x, y: center.y - maxDim.h / 2 }, this.angle));
-      // bottom
-      drawDistanceToNextWall(center, rotate(center, { x: center.x, y: center.y + maxDim.h / 2 }, this.angle));
-
-      ctx.value.restore();
-    }
-  }
-
-  toJSON(): RectangleJSON {
-    return { mov: super.movableToJSON(), name: this.name, p: this.p, dims: this.dims, angle: this.angle };
-  }
-}
 
 // A circle, it can be moved and rotated
 type CircleJSON = { mov: MovableJSON, name: string, c: Point, r: number };
@@ -3639,62 +2192,18 @@ class Ellipse extends Movable {
 }
 
 
-function toNextNumber(p: Point): Point {
-  return { x: Math.round(p.x), y: Math.round(p.y) };
-}
 
-function distance(p1: Point, p2: Point): number {
-  return Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
-}
 
-function translate(p: Point, dim: Dim, sc: number = 1): Point {
-  return {
-    x: p.x + dim.w / sc,
-    y: p.y + dim.h / sc
-  };
-}
 
-function toRad(angle: number): number {
-  return Math.PI * angle / 180;
-}
-function toDeg(angle: number): number {
-  return 180 * angle / Math.PI;
-}
 
-function rotate(c: Point, p: Point, angle: number): Point {
-  const rad = toRad(angle);
-  return {
-    x: Math.cos(rad) * (p.x - c.x) - Math.sin(rad) * (p.y - c.y) + c.x,
-    y: Math.sin(rad) * (p.x - c.x) + Math.cos(rad) * (p.y - c.y) + c.y
-  };
-}
 
-function angleBetweenPoints(p1: Point, p2: Point, p3: Point): number {
-  return toDeg(Math.atan2(p3.y - p1.y, p3.x - p1.x) -
-    Math.atan2(p2.y - p1.y, p2.x - p1.x));
-}
 
-function pointInCircle(c: Point, r: number, p: Point): boolean {
-  return distance(c, p) <= r;
-}
 
-function getIntersectionPoint(center: Point, border: Point, wall1: Point, wall2: Point): Point | null {
-  const denom = (center.x - border.x) * (wall1.y - wall2.y) - (center.y - border.y) * (wall1.x - wall2.x);
-  if (denom === 0) {
-    return null;
-  }
-  const t = ((center.x - wall1.x) * (wall1.y - wall2.y) - (center.y - wall1.y) * (wall1.x - wall2.x)) / denom;
-  const u = ((center.x - wall1.x) * (center.y - border.y) - (center.y - wall1.y) * (center.x - border.x)) / denom;
 
-  if (t > 1 && u >= 0 && u <= 1) {
-    return { x: center.x + t * (border.x - center.x), y: center.y + t * (border.y - center.y) };
-  }
-  return null;
-}
 
-function getTrapezoidArea(p1: Point, p2: Point): number {
-  return (p1.x - p2.x) * (p1.y + p2.y) / 2;
-}
+
+
+
 
 function navZoomIn() {
   zoomToMiddle(Math.pow(settings.value.zoomFactor, 4))
@@ -3811,6 +2320,731 @@ function printButton() {
 onMounted(() => {
   canvas.value = document.getElementById("canvas")
   ctx.value = canvas.value.getContext("2d")
+
+  graph.value =   {
+    count: 0,
+    nodes: {},
+    edges: {},
+    addNode: function (p: Point): number {
+      const id: number = this.count++;
+      this.nodes[id] = new CornerNode(id, p.x, p.y);
+
+      console.log("new Node:", id);
+      return id;
+    },
+    removeNode: function (id: number) {
+      console.log("remove Node:", id);
+      delete this.nodes[id];
+      for (const outEdges of Object.values(this.edges)) {
+        for (const edge of Object.values(outEdges)) {
+          if (edge.id1 === id || edge.id2 === id) {
+            this.removeEdge(edge.id1, edge.id2);
+          }
+        }
+      }
+      delete this.edges[id];
+    },
+    addEdge: function (id1: number, id2: number): Edge | null {
+      if (id1 === id2) {
+        return null;
+      }
+      console.log("new Edge:", id1, id2);
+      const lhsId = id1 < id2 ? id1 : id2;
+      const rhsId = id1 < id2 ? id2 : id1;
+
+      this.edges[lhsId] = this.edges[lhsId] || {};
+      this.edges[lhsId]![rhsId] = this.edges[lhsId]![rhsId] || new Edge(lhsId, rhsId);
+
+      return this.edges[lhsId]![rhsId]!;
+    },
+    removeEdge: function (id1: number, id2: number) {
+      const lhsId = id1 < id2 ? id1 : id2;
+      const rhsId = id1 < id2 ? id2 : id1;
+
+      const outEdges = this.edges[lhsId];
+      if (outEdges !== undefined) {
+        const edge = outEdges[rhsId];
+        if (edge !== undefined) {
+          for (const openable of edge.snapOpenables) {
+            openable.snap.edge = null;
+            openable.snap.pos = null;
+            openable.snap.orientation = null;
+          }
+        }
+        delete outEdges[rhsId];
+        if (Object.keys(outEdges).length === 0) {
+          delete this.edges[lhsId];
+        }
+      }
+    },
+    mergeNodes: function (fromId: number, toId: number) {
+      console.log("merge:", fromId, toId);
+      for (const outEdges of Object.values(this.edges)) {
+        for (const edge of Object.values(outEdges)) {
+          if (edge.id1 === fromId && edge.id2 !== toId) {
+            const newEdge = this.addEdge(toId, edge.id2);
+            if (newEdge !== null) {
+              newEdge.snapOpenables.push(...edge.snapOpenables);
+              for (const openable of edge.snapOpenables) {
+                openable.snap.edge = newEdge;
+                if (newEdge.id1 !== toId) {
+                  openable.snap.pos = 1 - openable.snap.pos!;
+                  openable.snap.orientation = (openable.snap.orientation! + 1) % 2;
+                }
+              }
+            }
+            edge.snapOpenables.length = 0;
+          } else if (edge.id2 === fromId && edge.id1 !== toId) {
+            const newEdge = this.addEdge(toId, edge.id1);
+            if (newEdge !== null) {
+              newEdge.snapOpenables.push(...edge.snapOpenables);
+              for (const openable of edge.snapOpenables) {
+                if (newEdge.id1 === toId) {
+                  openable.snap.pos = 1 - openable.snap.pos!;
+                  openable.snap.orientation = (openable.snap.orientation! + 1) % 2;
+                }
+                openable.snap.edge = newEdge;
+              }
+            }
+            edge.snapOpenables.length = 0;
+          }
+        }
+      }
+
+      this.removeNode(fromId);
+    },
+    bisect: function (id: number, edge: Edge, pos: number) {
+      console.log("bisect (%i, %i) by %i", edge.id1, edge.id2, id);
+
+      const newEdge1 = this.addEdge(id, edge.id1);
+      const newEdge2 = this.addEdge(id, edge.id2);
+
+      for (const openable of edge.snapOpenables) {
+        const firstPart = openable.snap.pos! <= pos;
+        const tempEdge = firstPart ? newEdge1 : newEdge2;
+        if (tempEdge !== null) {
+          tempEdge.snapOpenables.push(openable);
+          openable.snap.edge = tempEdge;
+          openable.snap.pos = firstPart ? openable.snap.pos! / pos : (openable.snap.pos! - pos) / (1 - pos);
+          if (firstPart && tempEdge.id2 !== id || !firstPart && tempEdge.id1 != id) {
+            openable.snap.pos = 1 - openable.snap.pos;
+            openable.snap.orientation = (openable.snap.orientation! + 1) % 2;
+          }
+        }
+      }
+      edge.snapOpenables.length = 0;
+      this.removeEdge(edge.id1, edge.id2);
+    },
+    reset: function () {
+      this.count = 0;
+      this.nodes = {};
+      this.edges = {};
+    },
+    nextEdgeToSegment: function (center: Point, p: Point): Point | null {
+      let result: Point | null = null;
+      let minDist: optionalNumber = null;
+      for (const outEdges of Object.values(this.edges)) {
+        for (const edge of Object.values(outEdges)) {
+          const node1 = this.nodes[edge.id1]!;
+          const node2 = this.nodes[edge.id2]!;
+
+          const intersectionPoint: Point | null = getIntersectionPoint(center, p, node1.p, node2.p);
+          if (intersectionPoint !== null) {
+            const dist = distance(intersectionPoint, p);
+            if (minDist === null || dist < minDist) {
+              minDist = dist;
+              result = intersectionPoint;
+            }
+          }
+        }
+      }
+      return result;
+    },
+    // p, the position to check; p is in node position space
+    closestNodeToClick: function (p: Point): optionalNumber {
+      let minDist: optionalNumber = null;
+      let minId: optionalNumber = null;
+      for (const node of Object.values(this.nodes)) {
+        const dist = distance(p, node.p);
+        if (minDist === null || dist < minDist) {
+          minDist = dist;
+          minId = node.id;
+        }
+      }
+      return minId;
+    },
+    // snap functionality
+    handleNodeToNodeSnap: function (node: CornerNode, p: Point, extendNode: boolean): boolean {
+      let minDist: optionalNumber = null;
+      for (const other of Object.values(this.nodes)) {
+        if (!extendNode && other.id === node.id) {
+          continue;
+        }
+        const dist = distance(other.p, projection.to(p));
+        if (dist < settings.value.nodeExtendSize && (minDist === null || dist < minDist)) {
+          minDist = dist;
+          node.delta = projection.from(other.p);
+          node.snap.x = other.id;
+          node.snap.y = other.id;
+
+          if (!extendNode) {
+            node.p = { x: other.p.x, y: other.p.y };
+          }
+        }
+      }
+      return minDist !== null;
+    },
+    handleNodeToEdgeSnap: function (node: CornerNode, p: Point, extendNode: boolean): boolean {
+      const clickPos = projection.to(p);
+
+      let minDist: optionalNumber = null;
+
+      for (const outEdges of Object.values(this.edges)) {
+        for (const edge of Object.values(outEdges)) {
+          if (!extendNode && (edge.id1 === node.id || edge.id2 === node.id)) {
+            continue;
+          }
+
+          const node1 = this.nodes[edge.id1];
+          const node2 = this.nodes[edge.id2];
+
+          if (node1 === undefined || node2 === undefined) { continue; }
+
+          const t =
+            ((node2.p.x - node1.p.x) * (clickPos.x - node1.p.x) + (node2.p.y - node1.p.y) * (clickPos.y - node1.p.y)) /
+            ((node2.p.x - node1.p.x) ** 2 + (node2.p.y - node1.p.y) ** 2);
+
+          if (t < 0 || t > 1) {
+            continue;
+          }
+          const dist = Math.abs(
+            ((node2.p.x - node1.p.x) * (node1.p.y - clickPos.y) - (node1.p.x - clickPos.x) * (node2.p.y - node1.p.y)) /
+            distance(node2.p, node1.p));
+          if (dist < settings.value.nodeExtendSize && (minDist === null || dist < minDist)) {
+            minDist = dist;
+
+            const proj = toNextNumber({
+              x: node1.p.x + t * (node2.p.x - node1.p.x),
+              y: node1.p.y + t * (node2.p.y - node1.p.y)
+            });
+
+            node.snap.edge = edge;
+            node.snap.pos = t;
+            node.delta = projection.from(proj);
+            if (!extendNode) {
+              node.p = proj;
+            }
+          }
+        }
+      }
+
+      if (minDist !== null) {
+        const axisDist = this.handleNodeToNeighborSnap(node, p, extendNode, false);
+
+        const node1 = this.nodes[node.snap.edge!.id1]!;
+        const node2 = this.nodes[node.snap.edge!.id2]!;
+
+        if (node.snap.x !== null &&
+          node.snap.x !== node1.id &&
+          node.snap.x !== node2.id &&
+          (node.snap.y === null ||
+            axisDist.x! <= axisDist.y! ||
+            node.snap.y === node1.id ||
+            node.snap.y === node2.id)) {
+          const otherNode = this.nodes[node.snap.x]!;
+          const otherPos = (otherNode.p.x - node1.p.x) / (node2.p.x - node1.p.x);
+          if (otherPos > 0 && otherPos < 1) {
+            const proj = toNextNumber({
+              x: otherNode.p.x,
+              y: node1.p.y + otherPos * (node2.p.y - node1.p.y),
+            });
+            node.snap.pos = otherPos;
+            node.delta = projection.from(proj);
+            if (!extendNode) {
+              node.p = proj;
+            }
+          }
+        } else if (node.snap.y !== null &&
+          node.snap.y !== node1.id &&
+          node.snap.y !== node2.id &&
+          (node.snap.x === null ||
+            axisDist.y! < axisDist.x! ||
+            node.snap.x === node1.id ||
+            node.snap.x === node2.id)) {
+          const otherNode = this.nodes[node.snap.y]!;
+          const otherPos = (otherNode.p.y - node1.p.y) / (node2.p.y - node1.p.y);
+          if (otherPos > 0 && otherPos < 1) {
+            const proj = toNextNumber({
+              x: node1.p.x + otherPos * (node2.p.x - node1.p.x),
+              y: otherNode.p.y,
+            });
+            node.snap.pos = otherPos;
+            node.delta = projection.from(proj);
+            if (!extendNode) {
+              node.p = proj;
+            }
+          }
+        } else {
+          node.snap.x = null;
+          node.snap.y = null;
+        }
+      }
+
+      return minDist !== null;
+    },
+    handleNodeToNeighborSnap: function (node: CornerNode, p: Point, extendNode: boolean, change: boolean): optionalPoint {
+      const clickPos = projection.to(p);
+      const minDist: optionalPoint = { x: null, y: null };
+      for (const other of Object.values(this.nodes)) {
+        if (!extendNode && other.id === node.id) {
+          continue;
+        }
+        const dist = { x: Math.abs(other.p.x - clickPos.x), y: Math.abs(other.p.y - clickPos.y) };
+        if (dist.x < settings.value.nodeExtendSize && (minDist.x === null || dist.x < minDist.x) && dist.x <= dist.y) {
+          minDist.x = dist.x;
+          if (change) {
+            node.delta.x = projection.from(other.p).x;
+            if (!extendNode) {
+              node.p.x = other.p.x;
+            }
+          }
+          node.snap.x = other.id;
+        } else if (dist.y < settings.value.nodeExtendSize && (minDist.y === null || dist.y < minDist.y) && dist.y < dist.x) {
+          minDist.y = dist.y;
+          if (change) {
+            node.delta.y = projection.from(other.p).y;
+            if (!extendNode) {
+              node.p.y = other.p.y;
+            }
+          }
+          node.snap.y = other.id;
+        }
+      }
+
+      return minDist;
+    },
+    handleNodeSnap: function (node: CornerNode, p: Point, extendNode: boolean) {
+      node.snap = { x: null, y: null, edge: null, pos: null };
+      if (this.handleNodeToNodeSnap(node, p, extendNode)) {
+        return;
+      }
+      if (this.handleNodeToEdgeSnap(node, p, extendNode)) {
+        return;
+      }
+      const minDist = this.handleNodeToNeighborSnap(node, p, extendNode, true);
+
+      // if no snapping happend
+      const proj = toNextNumber({
+        x: node.p.x + (p.x - node.delta.x) / projection.scale,
+        y: node.p.y + (p.y - node.delta.y) / projection.scale
+      });
+      if (minDist.x === null) {
+        node.snap.x = null;
+        if (!extendNode) {
+          node.p.x = proj.x;
+          node.delta.x = projection.from(proj).x;
+        } else {
+          node.delta.x = p.x;
+        }
+      }
+      if (minDist.y === null) {
+        node.snap.y = null;
+        if (!extendNode) {
+          node.p.y = proj.y;
+          node.delta.y = projection.from(proj).y;
+        } else {
+          node.delta.y = p.y;
+        }
+      }
+    },
+    getFaces: function (): CornerNode[][] {
+      let directedEdges: [number, number][] = [];
+
+      let allEdges: { [key: number]: number[] } = {};
+
+      for (const outEdges of Object.values(this.edges)) {
+        for (const edge of Object.values(outEdges)) {
+          directedEdges.push([edge.id1, edge.id2]);
+          directedEdges.push([edge.id2, edge.id1]);
+
+          allEdges[edge.id1] = allEdges[edge.id1] || [];
+          allEdges[edge.id2] = allEdges[edge.id2] || [];
+
+          allEdges[edge.id1]!.push(edge.id2);
+          allEdges[edge.id2]!.push(edge.id1);
+        }
+      }
+
+      let nextEdge: { [key: number]: { [key: number]: number } } = {};
+      Object.entries(allEdges).forEach(
+        ([id1S, outEdges]) => {
+          if (outEdges.length === 0) {
+            return;
+          }
+          // wtf; why can I not access the key as number here...
+          const id1 = Number(id1S);
+          const currNode = this.nodes[id1] as CornerNode;
+          outEdges.sort(
+            (other1: number, other2: number) => {
+              const otherNode1 = this.nodes[other1] as CornerNode;
+              const otherNode2 = this.nodes[other2] as CornerNode;
+              const angle1 = Math.atan2(otherNode1.p.y - currNode.p.y, otherNode1.p.x - currNode.p.x);
+              const angle2 = Math.atan2(otherNode2.p.y - currNode.p.y, otherNode2.p.x - currNode.p.x);
+              return angle1 - angle2;
+            }
+          );
+          nextEdge[id1] = nextEdge[id1] || {};
+          nextEdge[id1]![outEdges.at(0)!] = outEdges.at(outEdges.length - 1) as number;
+          for (let idx: number = 1; idx < outEdges.length; ++idx) {
+            const id2 = outEdges[idx] as number;
+            nextEdge[id1]![id2] = outEdges.at(idx - 1) as number;
+          }
+        }
+      );
+
+      let result: CornerNode[][] = [];
+      while (directedEdges.length > 0) {
+        let currFace = result.at(result.push([]) - 1) as CornerNode[];
+        const [id1, id2] = directedEdges.at(0) as [number, number];
+        let currNode = this.nodes[id1] as CornerNode;
+        let nextNode = this.nodes[id2] as CornerNode;
+
+        currFace.push(currNode);
+        let removeIdx: number = -1;
+        while ((removeIdx = directedEdges.findIndex((val) => val.at(0) === currNode.id && val.at(1) === nextNode.id)) !== -1) {
+          currFace.push(nextNode);
+
+          directedEdges.splice(removeIdx, 1);
+
+          const nextId = nextEdge[nextNode.id]![currNode.id] as number;
+          currNode = nextNode;
+          nextNode = this.nodes[nextId] as CornerNode;
+        }
+      }
+
+      return result;
+    },
+    // e, the click position; e is in screen space
+    handleClick: function (e: Point): boolean {
+      let selected = false;
+      const clickPos = projection.to(e);
+      const nodeId = this.closestNodeToClick(clickPos);
+      if (nodeId !== null) {
+        const node = this.nodes[nodeId];
+        if (node !== undefined) {
+          const dist = distance(node.p, clickPos);
+          if (dist <= settings.value.nodeTransSize) {
+            selected = true;
+            node.translate = true;
+            node.delta.x = e.x;
+            node.delta.y = e.y;
+          } else if (dist <= settings.value.nodeExtendSize) {
+            selected = true;
+            node.extend = true;
+            node.delta.x = e.x;
+            node.delta.y = e.y;
+          }
+        }
+      }
+      return selected;
+    },
+    handleMove: function (e: Point): boolean {
+      let changed = false;
+      for (const node of Object.values(this.nodes)) {
+        if (node.translate) {
+          changed = true;
+
+          this.handleNodeSnap(node, e, false);
+
+          for (const outEdges of Object.values(this.edges)) {
+            for (const edge of Object.values(outEdges)) {
+              if (edge.id1 === node.id || edge.id2 === node.id) {
+                const node1 = this.nodes[edge.id1];
+                const node2 = this.nodes[edge.id2];
+
+                if (node1 === undefined || node2 === undefined) { continue; }
+
+                for (const openable of edge.snapOpenables) {
+                  const proj = {
+                    x: node1.p.x + openable.snap.pos! * (node2.p.x - node1.p.x),
+                    y: node1.p.y + openable.snap.pos! * (node2.p.y - node1.p.y)
+                  };
+                  const shift = { x: proj.x - openable.dim.w / 2, y: proj.y };
+                  openable.p = shift;
+                  openable.angle = toDeg(Math.atan2(node2.p.y - node1.p.y, node2.p.x - node1.p.x)) + openable.snap.orientation! * 180;
+                }
+              }
+            }
+          }
+
+          handleRemove(e, node);
+        } else if (node.extend) {
+          changed = true;
+
+          this.handleNodeSnap(node, e, true);
+
+          handleRemove(e, node);
+        }
+      }
+      return changed;
+    },
+    handleUnclick: function (e: Point) {
+      for (const node of Object.values(this.nodes)) {
+        if (node.remove && node.translate) {
+          this.removeNode(node.id);
+          continue;
+        } else if (node.translate) {
+          if (node.snap.x !== null && node.snap.y !== null && node.snap.x === node.snap.y && node.snap.x !== node.id) {
+            this.mergeNodes(node.id, node.snap.x);
+          } else if (node.snap.edge !== null && node.snap.pos !== null) {
+            this.bisect(node.id, node.snap.edge, node.snap.pos);
+          }
+        } else if (node.extend && !node.remove) {
+          if (node.snap.x !== null && node.snap.y !== null && node.snap.x === node.snap.y) {
+            if (node.snap.x !== node.id) {
+              this.addEdge(node.id, node.snap.x);
+            }
+          } else {
+            const newId = this.addNode(
+              toNextNumber(projection.to({
+                x: node.snap.x === null && node.snap.edge === null ? e.x : node.delta.x,
+                y: node.snap.y === null && node.snap.edge === null ? e.y : node.delta.y
+              })));
+            this.addEdge(node.id, newId);
+            if (node.snap.edge !== null && node.snap.pos !== null) {
+              this.bisect(newId, node.snap.edge, node.snap.pos);
+            }
+          }
+        }
+        node.remove = false;
+        node.translate = false;
+        node.extend = false;
+        node.snap = { x: null, y: null, edge: null, pos: null };
+        node.delta = { x: 0, y: 0 };
+      }
+    },
+    draw: function () {
+      if (settings.value.showRoomSize) {
+        this.drawFaces();
+      }
+
+      this.drawEdges();
+
+      if (settings.value.mode === Mode.Room) {
+        this.drawNodes();
+
+        this.drawExtend();
+      }
+    },
+    drawFaces: function () {
+      const faces = this.getFaces();
+
+      ctx.value.fillStyle = "lightgray";
+      ctx.value.textAlign = "center";
+      ctx.value.textBaseline = "middle";
+
+      for (const face of faces) {
+        if (face.length < 2) { continue; }
+
+        let area: number = 0;
+        let mid: Point = { x: 0, y: 0 };
+        let prevP: Point = face.at(0)!.p;
+        for (let i = 1; i < face.length; ++i) {
+          const currP: Point = face.at(i)!.p;
+          area += getTrapezoidArea(prevP, currP);
+          mid = {
+            x: mid.x + (prevP.x + currP.x) * (prevP.x * currP.y - currP.x * prevP.y),
+            y: mid.y + (prevP.y + currP.y) * (prevP.x * currP.y - currP.x * prevP.y),
+          };
+          prevP = currP;
+        }
+        mid = {
+          x: mid.x / (6 * area),
+          y: mid.y / (6 * area),
+        }
+        area /= 1000 * 1000;
+
+        if (area < 1) {
+          setFontSize(18, false, true);
+        } else {
+          setFontSize(22, false, true);
+        }
+        if (area <= 0) { continue; }
+
+        ctx.value.fillText(area.toFixed(1) + "m²", mid.x, mid.y);
+      }
+      restoreDefaultContext()
+    },
+    drawEdges: function () {
+      for (const outEdges of Object.values(this.edges)) {
+        for (const edge of Object.values(outEdges)) {
+          const node1 = this.nodes[edge.id1];
+          const node2 = this.nodes[edge.id2];
+
+          if (node1 === undefined || node2 === undefined) { continue; }
+
+          if ((node1.remove && node1.translate) || (node2.remove && node2.translate)) {
+            ctx.value.fillStyle = "red";
+            ctx.value.strokeStyle = "red";
+          }
+
+          ctx.value.beginPath();
+          ctx.value.moveTo(node1.p.x, node1.p.y);
+
+          // uncomment for gaps in windows (sort openables by pos before)
+          // const dist = distance(node1.p, node2.p);
+          // for (const openable of edge.snapOpenables) {
+          //     const relWidth = openable.dim.w / dist;
+          //     const t1 = Math.max(0, openable.snap.pos - relWidth / 2);
+          //     const t2 = Math.min(1, openable.snap.pos + relWidth / 2);
+
+          //     ctx.lineTo(node1.p.x + t1 * (node2.p.x - node1.p.x), node1.p.y + t1 * (node2.p.y - node1.p.y));
+          //     ctx.moveTo(node1.p.x + t2 * (node2.p.x - node1.p.x), node1.p.y + t2 * (node2.p.y - node1.p.y));
+          // }
+
+          ctx.value.lineTo(node2.p.x, node2.p.y);
+          ctx.value.stroke();
+
+          if ((!node1.remove && node1.translate) || (!node2.remove && node2.translate)) {
+            const node = node1.translate ? node2 : node1;
+            const other = node1.translate ? node1 : node2;
+            const dist = distance(node1.p, node2.p);
+            const ul = { x: -projection.p.x / projection.scale, y: -projection.p.y / projection.scale };
+            const br = projection.to({ x: canvas.value.width, y: canvas.value.height });
+
+            const nodeScaling = settings.value.nodeTransSize / dist;
+            const nodeBorder = {
+              x: node.p.x * (1 - nodeScaling) + other.p.x * nodeScaling,
+              y: node.p.y * (1 - nodeScaling) + other.p.y * nodeScaling,
+            };
+            const otherBorder = {
+              x: other.p.x * (1 - nodeScaling) + node.p.x * nodeScaling,
+              y: other.p.y * (1 - nodeScaling) + node.p.y * nodeScaling,
+            };
+
+            const borderPos = {
+              x: Math.min(Math.max(nodeBorder.x, ul.x), br.x),
+              y: Math.min(Math.max(nodeBorder.y, ul.y), br.y)
+            };
+
+            const sx = nodeBorder.x === otherBorder.x ? 1 : (borderPos.x - otherBorder.x) / (nodeBorder.x - otherBorder.x);
+            const sy = nodeBorder.y === otherBorder.y ? 1 : (borderPos.y - otherBorder.y) / (nodeBorder.y - otherBorder.y);
+
+            const borderScaling = Math.min(sx, sy);
+            const scaling = Math.min(sx, sy) / 2;
+
+            setFontSize(20, false);
+
+            ctx.value.save();
+            const b = {
+              x: otherBorder.x * (1 - borderScaling) + nodeBorder.x * borderScaling,
+              y: otherBorder.y * (1 - borderScaling) + nodeBorder.y * borderScaling,
+            };
+            const c = {
+              x: otherBorder.x * (1 - scaling) + nodeBorder.x * scaling,
+              y: otherBorder.y * (1 - scaling) + nodeBorder.y * scaling,
+            };
+            ctx.value.translate(c.x, c.y);
+            const angle = Math.atan2(node.p.y - other.p.y, node.p.x - other.p.x);
+
+            ctx.value.rotate(angle < -Math.PI / 2 || angle > Math.PI / 2 ? angle + Math.PI : angle);
+            ctx.value.fillText(dist.toFixed(0) + "mm", 0, 0, distance(otherBorder, b));
+
+            ctx.value.restore();
+          } else if (settings.value.showEdgeLabels) {
+            const dist = distance(node1.p, node2.p);
+
+            setFontSize(18, false);
+
+            ctx.value.save();
+            const c = {
+              x: (node1.p.x + node2.p.x) / 2,
+              y: (node1.p.y + node2.p.y) / 2,
+            };
+            ctx.value.translate(c.x, c.y);
+            const angle = Math.atan2(node2.p.y - node1.p.y, node2.p.x - node1.p.x);
+
+            ctx.value.rotate(angle < -Math.PI / 2 || angle > Math.PI / 2 ? angle + Math.PI : angle);
+            drawDistance(0, 0, dist, 1, "m", 1000);
+            ctx.value.restore();
+          }
+
+          restoreDefaultContext();
+        }
+      }
+    },
+    drawNodes: function () {
+      for (const node of Object.values(this.nodes)) {
+        if (node.remove && node.translate) {
+          ctx.value.fillStyle = "red";
+          ctx.value.strokeStyle = "red";
+        }
+
+        // stroke
+        ctx.value.beginPath();
+        ctx.value.arc(node.p.x, node.p.y, settings.value.nodeExtendSize, 0, 2 * Math.PI);
+        ctx.value.stroke();
+
+        // fill
+        ctx.value.beginPath();
+        ctx.value.arc(node.p.x, node.p.y, settings.value.nodeTransSize, 0, 2 * Math.PI);
+        ctx.value.fill();
+
+        restoreDefaultContext();
+      }
+    },
+    drawExtend: function () {
+      for (const node of Object.values(this.nodes)) {
+        if (node.extend) {
+          const newPos = projection.to(node.delta);
+          if (node.remove) {
+            ctx.value.fillStyle = "red";
+            ctx.value.strokeStyle = "red";
+          } else {
+            ctx.value.fillStyle = "gray";
+            ctx.value.strokeStyle = "gray";
+          }
+          // stroke
+          ctx.value.beginPath();
+          ctx.value.arc(newPos.x, newPos.y, settings.value.nodeExtendSize, 0, 2 * Math.PI);
+          ctx.value.stroke();
+
+          // fill
+          ctx.value.beginPath();
+          ctx.value.arc(newPos.x, newPos.y, settings.value.nodeTransSize, 0, 2 * Math.PI);
+          ctx.value.fill();
+
+          // line
+          ctx.value.moveTo(node.p.x, node.p.y);
+          ctx.value.lineTo(newPos.x, newPos.y);
+          ctx.value.stroke();
+
+          if (!node.remove) {
+            setFontSize(20, false);
+
+            const dist = distance(node.p, newPos);
+            ctx.value.save();
+            const c = {
+              x: (node.p.x + newPos.x) / 2,
+              y: (node.p.y + newPos.y) / 2,
+            };
+            ctx.value.translate(c.x, c.y);
+            const angle = Math.atan2(node.p.y - newPos.y, node.p.x - newPos.x);
+
+            ctx.value.rotate(angle < -Math.PI / 2 || angle > Math.PI / 2 ? angle + Math.PI : angle);
+            ctx.value.fillText(dist.toFixed(0) + "mm", 0, 0, dist - 2 * settings.value.nodeTransSize);
+
+            ctx.value.restore();
+          }
+        }
+
+        restoreDefaultContext();
+      }
+    },
+    toJSON: function (): GraphJSON {
+      return { nodes: this.nodes, edges: this.edges };
+    },
+  };
 
   settings.value = {
     language: "en",
@@ -3996,7 +3230,7 @@ button.active {
 }
 #container {
   position: static;
-  width: 70%;
+  width: 100%;
 
 }
 #content {

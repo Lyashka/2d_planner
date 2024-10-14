@@ -1,11 +1,11 @@
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
-export const useCanvasStore = defineStore('canvasStore', {
+export const useCanvasStore = defineStore('canvasStore', () => {
 
-  state: () => ({
-    canvas: {},
-    ctx: {},
-  })
+  const canvas = ref({})
+  const ctx = ref({})
 
+return { canvas, ctx }
 })
 

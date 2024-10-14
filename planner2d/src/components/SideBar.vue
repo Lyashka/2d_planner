@@ -48,7 +48,3 @@ const tab = ref(items[0].title)
 
   </v-navigation-drawer>
 </template>
-
-<style scoped>
-
-</style>

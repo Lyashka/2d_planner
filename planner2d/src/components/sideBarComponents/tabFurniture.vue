@@ -20,7 +20,7 @@ const item = reactive({
 </script>
 
 <template>
-  <v-container class="pa-8 mb-4">
+  <v-container class="pa-8">
 
     <!--    <v-row class="ga-3" justify="space-between" no-gutters>-->
     <!--      <v-col cols="4">-->
@@ -161,7 +161,7 @@ const item = reactive({
       </v-col>
     </v-row>
     <v-spacer />
-    <v-row no-gutters>
+    <v-row class="mb-12" no-gutters>
       <v-col>
         <v-btn-toggle
           v-model="item.type"
@@ -186,6 +186,6 @@ const item = reactive({
         </v-btn>
       </v-col>
     </v-row>
+    <menu-group-btn />
   </v-container>
-  <menu-group-btn />
 </template>

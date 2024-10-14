@@ -22,6 +22,7 @@ const items = [
 
 <template>
   <v-tabs
+      class="border-sm border-opacity-0"
     stacked
     v-model="tab"
   >
@@ -54,7 +55,3 @@ const items = [
     </v-tabs-window-item>
   </v-tabs-window>
 </template>
-
-<style scoped>
-
-</style>

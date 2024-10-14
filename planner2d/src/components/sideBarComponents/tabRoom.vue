@@ -26,7 +26,7 @@ const door = reactive({
 </script>
 
 <template>
-  <v-container class="pa-8 mb-4">
+  <v-container class="pa-8">
     <v-row class="ga-3 mb-4" no-gutters>
       <v-col cols="12" class="text-h6 text-center">
         Размер узлов
@@ -93,7 +93,7 @@ const door = reactive({
         </v-btn>
       </v-col>
     </v-row>
-    <v-row class="ga-3 align-center justify-space-between" no-gutters>
+    <v-row class="ga-3 align-center justify-space-between mb-12" no-gutters>
       <v-col cols="12" class="text-h6 text-center">
         Двери
       </v-col>
@@ -145,10 +145,6 @@ const door = reactive({
         </v-btn>
       </v-col>
     </v-row>
+    <menu-group-btn />
   </v-container>
-  <menu-group-btn />
 </template>
-
-<style scoped>
-
-</style>

@@ -8,8 +8,8 @@ const widthFloor=ref(1000)
 </script>
 
 <template>
-  <v-sheet class="pa-8 mb-4">
-    <v-row class="ga-3 justify-space-between align-center mb-8" no-gutters>
+  <v-container class="pa-8 mb-4">
+    <v-row class="ga-3 justify-space-between align-center mb-12" no-gutters>
       <v-col cols="3">
         <v-number-input
           v-model="widthFloor"
@@ -50,7 +50,7 @@ const widthFloor=ref(1000)
       </v-col>
     </v-row>
     <menu-group-btn/>
-  </v-sheet>
+  </v-container>
 </template>
 
 <style scoped>

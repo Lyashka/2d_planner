@@ -1,11 +1,11 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { reactive } from 'vue'
 import { Graph } from '../defs'
 
 
 export const useGraphStore = defineStore('graphStore',() => {
 
-  const graph: Graph = ref({})
+  const graph: Graph = reactive({})
 
   return { graph }
 });

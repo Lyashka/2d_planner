@@ -22,7 +22,7 @@ const items = [
 
 <template>
   <v-tabs
-      class="border-sm border-opacity-0"
+    class="border-sm border-opacity-0"
     stacked
     v-model="tab"
   >

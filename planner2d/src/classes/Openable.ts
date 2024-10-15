@@ -1,9 +1,14 @@
-import { Dim, Mode, MovableType, OpenableType, optionalNumber, Point } from '../defs'
+import { Dim, Mode, MovableType, OpenableType, optionalNumber, Point, Graph } from '../defs'
 import { useCanvasStore} from '../store/canvasStore'
+import { useSettingsStore } from '../store/settingsStore'
+import { useProjectionStore} from '../store/projectionStore'
+import { useGraphStore } from '../store/graphStore'
 
 import { Movable } from './Movable'
 
-
+import { angleBetweenPoints, distance, pointInCircle, rotate, toRad, translate, toDeg } from '../composables/calculations'
+import { setFontSize, drawDistance } from '../composables/updateCtx'
+import { handleRemove } from '../composables/handleRemove'
 
 
 export class Openable extends Movable {
@@ -52,6 +57,7 @@ export class Openable extends Movable {
   }
 
   getRotateSize(): number {
+    const { settings } = useSettingsStore()
     if (this.dim.w / 2 <= settings.value.furnitureRotateSize || this.dim.h / 2 <= settings.value.furnitureRotateSize) {
       return Math.min(this.dim.w, this.dim.h) / 2;
     }
@@ -68,6 +74,7 @@ export class Openable extends Movable {
   }
 
   handleClick(e: Point): boolean {
+    const { projection } = useProjectionStore()
     if (this.snap.edge === null && this.pointInRotCircle(projection.to(e), this.getRotateSize() / 2)) {
       this.rotate = true;
       this.delta.x = e.x;
@@ -83,6 +90,7 @@ export class Openable extends Movable {
   }
 
   handleSnap(values: number[], angle: number, diff: number): boolean {
+    const { projection } = useProjectionStore()
     for (const value of values) {
       if (snap(angle, value, diff)) {
         this.angle = value % 360;
@@ -97,6 +105,9 @@ export class Openable extends Movable {
   }
 
   handleEdgeSnap(p: Point, graph: Graph) {
+    // const { graph } = useGraphStore()
+    const { projection } = useProjectionStore()
+    const { settings } = useSettingsStore()
     const clickPos = projection.to(p);
 
     let minDist: optionalNumber = null;
@@ -104,10 +115,10 @@ export class Openable extends Movable {
     let minT: optionalNumber = null;
     let minOrientation: optionalNumber = null;
 
-    for (const outEdges of Object.values(graph.value.edges)) {
+    for (const outEdges of Object.values(graph.edges)) {
       for (const edge of Object.values(outEdges)) {
-        const node1 = graph.value.nodes[edge.id1] as CornerNode;
-        const node2 = graph.value.nodes[edge.id2] as CornerNode;
+        const node1 = graph.nodes[edge.id1] as CornerNode;
+        const node2 = graph.nodes[edge.id2] as CornerNode;
 
         const t =
           ((node2.p.x - node1.p.x) * (clickPos.x - node1.p.x) + (node2.p.y - node1.p.y) * (clickPos.y - node1.p.y)) /
@@ -171,6 +182,8 @@ export class Openable extends Movable {
   }
 
   handleMove(e: Point, graph: Graph): boolean {
+    const { projection } = useProjectionStore()
+    const { settings } = useSettingsStore()
     let changed = false;
     if (this.translate) {
       changed = true;
@@ -195,6 +208,8 @@ export class Openable extends Movable {
   }
 
   draw() {
+    const { graph } = useGraphStore()
+    const { settings } = useSettingsStore()
     const { ctx } = useCanvasStore()
     ctx.value.save();
 
@@ -278,8 +293,8 @@ export class Openable extends Movable {
       ctx.value.stroke();
 
       if (this.snap.edge !== null && this.snap.pos !== null && this.snap.orientation !== null) {
-        const node1 = graph.value.nodes[this.snap.edge.id1] as CornerNode;
-        const node2 = graph.value.nodes[this.snap.edge.id2] as CornerNode;
+        const node1 = graph.nodes[this.snap.edge.id1] as CornerNode;
+        const node2 = graph.nodes[this.snap.edge.id2] as CornerNode;
 
         const dist: number = distance(node1.p, node2.p);
         const dist1: number = dist * this.snap.pos - this.dim.w / 2;

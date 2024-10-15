@@ -34,7 +34,7 @@ export function setFontSize(size: number, fixed: boolean = true, bold: boolean =
 export function drawDistanceToNextWall(center: Point, border: Point) {
   const { ctx } = useCanvasStore()
   const { graph } = useGraphStore()
-  const intersectionPoint = graph.value.nextEdgeToSegment(center, border)
+  const intersectionPoint = graph.nextEdgeToSegment(center, border)
   if (intersectionPoint !== null) {
     ctx.value.beginPath()
     ctx.value.moveTo(border.x, border.y)

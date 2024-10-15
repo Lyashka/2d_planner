@@ -128,9 +128,35 @@ export interface Graph {
   toJSON: () => GraphJSON,
 };
 
+export type CircleJSON = { mov: MovableJSON, name: string, c: Point, r: number };
 
+export type EllipseJSON = { mov: MovableJSON, name: string, c: Point, rX: number, rY: number, angle: number };
 
+export type FloorplanImageJSON = { image: string, distance: number, node1: CornerJSON, node2: CornerJSON };
 
+export interface FloorplanImage {
+  image: HTMLImageElement | null,
+  distance: number,
+  node1: CornerNode,
+  node2: CornerNode,
+  readonly nodeSize: number,
 
+  reset: () => void,
 
+  handleClick: (e: Point) => boolean,
+  handleMove: (e: Point) => boolean,
+  handleUnclick: () => void,
 
+  getCurrentScale: () => number,
+
+  draw: () => void,
+  drawEdge: () => void,
+  drawNodes: () => void,
+
+  toJSON: () => FloorplanImageJSON | {},
+}
+
+export interface Localization {
+  en: string,
+  de: string,
+}

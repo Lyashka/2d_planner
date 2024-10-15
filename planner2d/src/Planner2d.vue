@@ -13,14 +13,7 @@
           <button type="button" id="navZoomOut" class="navBarButton" @click="navZoomOut">⊖</button>
         </div>
 
-        <div class="navBar translate">
-          <button type="button" id="navUp" class="navBarButton" @click="navUp">⮉</button>
-          <div class="subBar">
-            <button type="button" id="navLeft" class="navBarButton" @click="navLeft">⮈</button>
-            <button type="button" id="navRight" class="navBarButton" @click="navRight">⮊</button>
-          </div>
-          <button type="button" id="navDown" class="navBarButton" @click="navDown">⮋</button>
-        </div>
+
 
 
 
@@ -206,7 +199,11 @@ import {
   CornerNodes,
   Edges,
   GraphJSON,
-  Graph
+  Graph,
+  EllipseJSON,
+  FloorplanImageJSON,
+  FloorplanImage,
+  Localization
 
 } from './defs'
 
@@ -214,17 +211,27 @@ import { useCanvasStore } from './store/canvasStore'
 import { useSettingsStore } from './store/settingsStore'
 import { useProjectionStore} from './store/projectionStore'
 import { useGraphStore } from './store/graphStore'
+import { useFloorplanImageStore } from './store/floorplanImageStore'
 
 import { Openable } from './classes/Openable'
 import { Movable } from './classes/Movable'
 import { CornerNode } from './classes/CornerNode'
 import { Edge } from './classes/Edge'
 import { Rectangle } from './classes/Rectangle'
+import { Circle } from './classes/Circle'
+import { Ellipse} from './classes/Ellipse'
 
 import { getCurrProjection } from './composables/getCurrProjection'
 import { handleRemove } from './composables/handleRemove'
+import { drawMain } from './composables/drawMain'
 import { setFontSize, drawDistance, restoreDefaultContext, drawDistanceToNextWall } from './composables/updateCtx'
+import { getText } from './composables/getText'
+import { zoomToMiddle, centerProjection, zoomEvent, zoom } from './composables/zoomProjection'
+import { moveProjection } from './composables/moveProjection'
+import { changeOpenableType } from './composables/changeOpenableType'
+import { changeFurnitureType } from './composables/changeFurnitureType'
 
+import { loc } from './composables/loc'
 
 import {
   toRad,
@@ -244,16 +251,13 @@ const { canvas, ctx } = useCanvasStore()
 const { settings } = useSettingsStore()
 const { projection, floorplanProjection } = useProjectionStore()
 const { graph } = useGraphStore()
+const { floorplanImage, labels, openables, furniture } = useFloorplanImageStore()
 
 
 // state will lazily track changes since init or last save/load as string
 let state: optionalString = null;
-const labels: Rectangle[] = [];
-const openables: Openable[] = [];
-const furniture: (Circle | Ellipse | Rectangle)[] = [];
 
 
-// utils
 
 
 
@@ -262,676 +266,35 @@ const furniture: (Circle | Ellipse | Rectangle)[] = [];
 
 
 
-function drawMain() {
-  ctx.value.reset();
-  ctx.value.clearRect(0, 0, canvas.value.width, canvas.value.height);
 
-  // fill background for export functionality
-  ctx.value.fillStyle = "white";
-  ctx.value.fillRect(0, 0, canvas.value.width, canvas.value.height);
 
-  if (settings.value.mode === Mode.Floorplan) {
-    ctx.value.translate(floorplanProjection.p.x, floorplanProjection.p.y);
-    ctx.value.scale(floorplanProjection.scale, floorplanProjection.scale);
 
-    // global properties
-    restoreDefaultContext();
 
-    floorplanImage.draw();
 
-    if (floorplanImage.image === null) {
-      drawHelp();
-    }
 
-    return;
-  }
 
-  ctx.value.translate(projection.p.x, projection.p.y);
-  ctx.value.scale(projection.scale, projection.scale);
 
-  // global properties
-  restoreDefaultContext();
 
-  floorplanImage.draw();
 
-  drawScale();
-  drawDeletionField();
 
-  if (Object.keys(graph.value.nodes).length === 0 && furniture.length === 0 && openables.length === 0 && labels.length === 0 && floorplanImage.image === null) {
-    drawHelp();
-  } else {
-    for (let i = labels.length - 1; i >= 0; i--) {
-      const label = labels[i];
-      if (label !== undefined) {
-        drawLabel(label);
-      }
-    }
-
-    for (let i = openables.length - 1; i >= 0; i--) {
-      const openable = openables[i];
-      if (openable !== undefined) {
-        openable.draw();
-      }
-    }
-
-    graph.value.draw();
-
-    for (let i = furniture.length - 1; i >= 0; i--) {
-      const fur = furniture[i];
-      if (fur !== undefined) {
-        fur.draw();
-      }
-    }
-  }
-}
-
-
-function drawHelp() {
-  const proj = getCurrProjection();
-  const ul = { x: -proj.p.x / proj.scale, y: -proj.p.y / proj.scale };
-  const br = proj.to({ x: canvas.value.width, y: canvas.value.height });
-
-  ctx.value.fillStyle = "gray";
-  setFontSize(40, false);
-
-  ctx.value.beginPath();
-  switch (settings.value.mode) {
-    case Mode.Floorplan: {
-      ctx.value.fillText(getText(loc.floorplan.help), (ul.x + br.x) / 2, (ul.y + br.y) / 2);
-      break;
-    }
-    case Mode.Room: {
-      ctx.value.fillText(getText(loc.room.help), (ul.x + br.x) / 2, (ul.y + br.y) / 2);
-      break;
-    }
-    case Mode.Furniture: {
-      ctx.value.fillText(getText(loc.furniture.help), (ul.x + br.x) / 2, (ul.y + br.y) / 2);
-      break;
-    }
-    case Mode.Presentation: {
-      ctx.value.fillText(getText(loc.presentation.help), (ul.x + br.x) / 2, (ul.y + br.y) / 2);
-      break;
-    }
-  }
-  ctx.value.stroke();
-
-  restoreDefaultContext();
-}
-
-
-function drawLabel(label: Rectangle) {
-  ctx.value.save();
-
-  const c = label.center();
-  const maxDim = label.getMaxDim();
-
-  ctx.value.translate(c.x, c.y);
-  ctx.value.rotate(toRad(label.angle));
-
-  ctx.value.fillStyle = label.remove ? "red" : "lightgray";
-  ctx.value.strokeStyle = label.remove ? "red" : "lightgray";
-
-  setFontSize(maxDim.h);
-  ctx.value.textBaseline = "middle";
-
-  ctx.value.fillText(label.name, 0, 0);
-
-  const rotateSize = label.getRotateSize();
-  if (settings.value.mode === Mode.Room) {
-    ctx.value.beginPath();
-    ctx.value.arc(
-      -maxDim.w / 2 + rotateSize / 2,
-      -maxDim.h / 2 + rotateSize / 2,
-      rotateSize / 2,
-      0,
-      2 * Math.PI
-    );
-    ctx.value.stroke();
-  }
-
-  ctx.value.restore();
-}
-
-function drawScale() {
-  const lhs = projection.to({ x: 0, y: 0 });
-  const rhs = projection.to({ x: canvas.value.width, y: 0 });
-  const scaleWidth = (rhs.x - lhs.x) / 3;
-  let range = 0.1;
-  while (scaleWidth / (range * 10) > 2) {
-    range *= 10;
-  }
-  let units = 1000;
-  let unit = "m";
-  if (range === 100 || range === 10) {
-    units = 10;
-    unit = "cm";
-  } else if (range < 10) {
-    units = 1;
-    unit = "mm";
-  }
-  ctx.value.beginPath();
-
-  setFontSize(15, false);
-
-  let i = 0;
-  for (; i < scaleWidth; i += range) {
-    ctx.value.moveTo((-projection.p.x + 20) / projection.scale + i, (-projection.p.y + 17) / projection.scale);
-    ctx.value.lineTo((-projection.p.x + 20) / projection.scale + i, (-projection.p.y + 27) / projection.scale);
-    if (i % (10 * range) === 0 || Math.floor(scaleWidth / range) < 10) {
-      ctx.value.fillText((i / units) + unit,
-        (-projection.p.x + 20) / projection.scale + i,
-        (-projection.p.y + 15) / projection.scale,
-        Math.floor(scaleWidth / range) < 10 ? range : scaleWidth / 2);
-    }
-  }
-
-  ctx.value.moveTo((-projection.p.x + 20) / projection.scale, (-projection.p.y + 22) / projection.scale);
-  ctx.value.lineTo((-projection.p.x + 20) / projection.scale + i - range, (-projection.p.y + 22) / projection.scale);
-
-  ctx.value.stroke();
-  restoreDefaultContext();
-}
-
-function drawDeletionField() {
-  // only display garbage bin if needed
-  if (settings.value.mode === Mode.Presentation) {
-    return;
-  }
-
-  const a = projection.to({ x: canvas.value.width - settings.value.deleteDim.w, y: 0 })
-  const d = projection.to({ x: canvas.value.width, y: settings.value.deleteDim.h })
-
-  ctx.value.lineJoin = "round"
-  ctx.value.strokeStyle = "red"
-
-  ctx.value.beginPath()
-  ctx.value.rect(a.x, a.y, d.x - a.x, d.y - a.y)
-  ctx.value.stroke()
-
-  const w = d.x - a.x
-  const h = d.y - a.y
-
-  // body
-  ctx.value.beginPath()
-  ctx.value.moveTo(a.x + .2 * w, a.y + .3 * h)
-  ctx.value.lineTo(a.x + .25 * w, a.y + .93 * h)
-  ctx.value.lineTo(a.x + .75 * w, a.y + .93 * h)
-  ctx.value.lineTo(a.x + .8 * w, a.y + .3 * h)
-  ctx.value.closePath()
-  ctx.value.stroke()
-
-  // stripes
-  for (const i of [.375, .5, .625]) {
-    ctx.value.beginPath()
-    ctx.value.rect(a.x + (i - .03) * w, a.y + .38 * h, .06 * w, .47 * h)
-    ctx.value.stroke()
-  }
-
-  if (!settings.value.isRemove) {
-    // head
-    ctx.value.beginPath()
-    ctx.value.rect(a.x + .15 * w, a.y + .15 * h, .7 * w, .1 * h)
-    ctx.value.stroke()
-
-    // handle
-    ctx.value.beginPath()
-    ctx.value.rect(a.x + .4 * w, a.y + .07 * h, .2 * w, .06 * h)
-    ctx.value.stroke()
-  }
-  restoreDefaultContext()
-}
-
-
-
-function centerProjection() {
-  const proj = getCurrProjection();
-  let minX: optionalNumber = null;
-  let minY: optionalNumber = null;
-  let maxX: optionalNumber = null;
-  let maxY: optionalNumber = null;
-
-  const updateBoundary = (p: Point) => {
-    if (minX === null || p.x < minX) { minX = p.x; }
-    if (maxX === null || p.x > maxX) { maxX = p.x; }
-    if (minY === null || p.y < minY) { minY = p.y; }
-    if (maxY === null || p.y > maxY) { maxY = p.y; }
-  };
-
-  if (settings.value.mode !== Mode.Floorplan) {
-    for (const openable of openables) {
-      updateBoundary(openable.p);
-    }
-    for (const label of labels) {
-      updateBoundary(label.p);
-    }
-    for (const fur of furniture) {
-      updateBoundary(fur.center());
-    }
-    for (const node of Object.values(graph.value.nodes)) {
-      updateBoundary(node.p);
-    }
-  }
-
-  if (floorplanImage.image) {
-    updateBoundary(floorplanImage.node1.p);
-    updateBoundary(floorplanImage.node2.p);
-    const image = floorplanImage.image;
-    const imageScale = floorplanImage.getCurrentScale();
-    updateBoundary({ x: image.x, y: image.y });
-    updateBoundary({ x: image.x + image.width * imageScale, y: image.y + image.height * imageScale });
-  }
-
-  if (minX === null || minY === null || maxX === null || maxY === null) {
-    return;
-  }
-
-  {// fix zoom with 20% border
-    const a = proj.to({ x: 0, y: 0 });
-    const b = proj.to({ x: canvas.value.width, y: canvas.value.height });
-    const zoomValue = Math.min((b.x - a.x) / ((maxX - minX) * 1.2), (b.y - a.y) / ((maxY - minY) * 1.2));
-    zoom(proj.p, zoomValue);
-  }
-
-  {// fix view of projection to middle
-    const a = proj.to({ x: 0, y: 0 });
-    const b = proj.to({ x: canvas.value.width, y: canvas.value.height });
-
-    const newP = proj.from({ x: (minX + maxX) / 2 - (b.x - a.x) / 2, y: (minY + maxY) / 2 - (b.y - a.y) / 2 });
-    proj.p = { x: proj.p.x - newP.x, y: proj.p.y - newP.y };
-  }
-  drawMain();
-}
-
-function moveProjection(direction: Direction) {
-  const proj = getCurrProjection();
-
-  switch (direction) {
-    case Direction.Up: {
-      proj.p.y -= canvas.value.height / 20;
-      break;
-    }
-    case Direction.Down: {
-      proj.p.y += canvas.value.height / 20;
-      break;
-    }
-    case Direction.Left: {
-      proj.p.x -= canvas.value.width / 20;
-      break;
-    }
-    case Direction.Right: {
-      proj.p.x += canvas.value.width / 20;
-      break;
-    }
-  }
-  drawMain();
-}
-
-
-
-interface Localization {
-  en: string,
-  de: string,
-}
-
-function getText(element: Localization): string {
-  const key = settings.value.language as keyof typeof element;
-  return key in element ? element[key] : element.en;
-}
-const loc = {
-  help: {
-    helpOpen: {
-      en: "Help",
-      de: "Hilfe"
-    },
-    helpClose: {
-      en: "Ok",
-      de: "Ok"
-    },
-    findHelp: {
-      en: "More Help 🡲",
-      de: "Mehr Hilfe 🡲"
-    },
-    findNav: {
-      en: "Navigation 🡲",
-      de: "Navigation 🡲"
-    },
-    welcome: {
-      en: "Welcome to the Pen And Paper Floorplanner.",
-      de: "Willkommen zum Pen And Paper Floorplanner."
-    },
-    intro: {
-      en: "The Pen And Paper Floorplanner is an easy to use 2D floorplanner webapp with no overhead or registration. This tool is designed to import/create floor plans and arrange furniture into created rooms.",
-      de: "Der Pen And Paper Floorplanner ist ein einfacher 2D Raumplaner ohne Schnickschnack und ohne Registrierung, direkt im Browser. Mit Hilfe dieser Anwendung können Grundrisse importiert/erstellt und mit Möbeln eingerichtet werden."
-    },
-    explanationMode: {
-      en: "There are four modes to choose from:",
-      de: "Es gibt vier Modi zwischen denen man wählen kann:"
-    },
-    explanationUtil: {
-      en: "At the bottom of the right menu the following actions can be performed:",
-      de: "Am unteren Rand des rechten Menüs sind folgende Aktionen möglich:"
-    },
-    introFloorplan: {
-      en: "Floorplan-Mode",
-      de: "Grundriss-Modus"
-    },
-    shortFloorplan: {
-      en: "Import an existing floorplan.",
-      de: "Importiere existierende Grundrisse."
-    },
-    explanationFloorplan: {
-      en: "In this mode an existing floorplan can be imported. Currently only image-files are supported (that means in particular that pdf files do not work). " +
-        "After the floorplan is loaded using the corresponding button on the right, the scaling of the floorplan has to be adjusted. " +
-        "This can be achieved by using the provided link (two half-circles connected by a line). " +
-        "First, move the corners of the link to a known distance in the floorplan (e.g. the length of a wall of known length or a provided scale). " +
-        "Second, adjust the length of the link in the right menu to the known distance. " +
-        "Afterwards the mode can be switched and the floorplan in the correct scale is displayed. " +
-        "The floorplan can also be removed in the right menu if needed.",
-      de: "In diesem Modus können existierende Grundrisse importiert werden. Aktuell sind lediglich Bilddateien unterstützt (das bedeutet insbesondere, dass keine pdf Dateien funktionieren). " +
-        "Nachdem der Grundriss importiert wurde, indem der entsprechende Knopf im rechten Menü geklickt wurde, muss die Skalierung angepasst werden. " +
-        "Das kann mit der gegebenen Strecke (zwei verbundene Halbkreise) erreicht werden. " +
-        "Zuerst müssen die Endpunkte der Strecke auf eine bekannten Abstand auf dem Grundriss verschoben werden (zum Beispiel einer bekannten Wandlänge oder einer Skala). " +
-        "Danach muss die Länge der Strecke auf den bekannten Abstand im rechten Menü eingestellt werden. " +
-        "Anschließend kann der Modus gewechselt werden und der Grundriss wird im korreten Maßstab angezeigt. " +
-        "Der Grundriss kann bei Bedarf gelöscht werden."
-    },
-    introRoom: {
-      en: "Room-Mode",
-      de: "Raum-Modus"
-    },
-    shortRoom: {
-      en: "Create a floor plan from scratch.",
-      de: "Grundrisse erstellen."
-    },
-    explanationRoom: {
-      en: "The two main elements in this mode are corners and walls. " +
-        "A corner can be created with a double click and moved by clicking its center and draging the mouse. " +
-        "Two corners can be merged together by placing a corner onto an existing corner. " +
-        "Walls can be created between corners by clicking the outer circle of a corner. " +
-        "The wall can then be connected to an existing corner or create a new corner at the current cursor location. " +
-        "Corners snap to edges and corners that are located vertically or horizontally. " +
-        "The snap distance is determined by the size of the outer circle. " +
-        "The size of the center and the outer circle can be adjusted in the right menu. " +
-        "Corners droped at the garbage bin at the top right corner will be removed. " +
-        "In this mode it is furthermore possible to create labels to name rooms for example. Labels can be deleted if droped in the garbage bin. " +
-        "It is also possible to place doors and windows, openables for short. " +
-        "Openables have a width and can be of three different types, anchored left, anchored right or doubled. " +
-        "They can be moved and rotated with the handle above the door/window. Openables snap to walls by placing them close to one. " +
-        "The angle is then adjusted automatically. A snaped openable will move together with walls. Openables can be removed by dropping them in the garbage bin. ",
-      de: "Die beiden Hauptelemente in diesem Modus sind Ecken und Wände. Eine Ecke kann durch einen Doppelklick erstellt werden. " +
-        "Eine Ecke besteht aus einem inneren und einem äußeren Kreis. " +
-        "Durch einen Klick auf den inneren Kreis kann eine Ecke verschoben werden. " +
-        "Wände können zwischen Ecken erstellt werden indem man auf den äußeren Kreis einer Start-Ecke klickt. " +
-        "Die erstellte Wand kann anschließend mit einer existierenden End-Ecke verbunden werden oder es kann eine neune End-Ecke bei der aktuellen Maus position erstellt werden. " +
-        "Ecken können automatisch anhand von Wänden und anderen Ecken horizontal oder vertikal ausgerichtet werden. " +
-        "Die Entfernung dieser automatischen Fixierung ist von der größe des äußeren Kreises abhängig. " +
-        "Die größe der Kreise einer Ecke kann im rechten Menü eingestellt werden. " +
-        "Ecken die in der Mülltonne abgelegt werden, der rote Bereich am oberen rechten Bildschirmrand, werden gelöscht. " +
-        "In diesem Modus können außerdem Aufschriften erstellt werden um zum Beispiel Räume zu benennen. Eine Aufschrift kann gelöscht werden indem diese in die Mülltonne verschoben wird. " +
-        "Weiterhin erlaubt dieser Modus das Erstellen von Türen und Fenstern. " +
-        "Diese haben eine Breite und sind einem von drei Typen zugeordnet: Linksbündig, Rechtsbündig oder Doppelt. " +
-        "Türen und Fenster können durch den Bereich darüber verschoben und rotiert werden. " +
-        "Sie können an Wänden ausgerichtet werden und positionieren sich anschießend automatisch. Türen/Fenster können gelöscht werden indem diese in die Mülltonne verschoben werden. ",
-    },
-    introFurniture: {
-      en: "Furniture-Mode",
-      de: "Möbel-Modus"
-    },
-    shortFurniture: {
-      en: "Decorate created rooms.",
-      de: "Richte erstellte Grundrisse ein.",
-    },
-    explanationFurniture: {
-      en: "In this mode furniture can be created, dragged and rotated. " +
-        "Furniture can be created in the right menu by clicking the 'Add' button. There are 4 different types of furniture. " +
-        "The ellipse is determined by a width and a height. The rectangle also requires width and height. The L-Shape has two block segments, both defined by width and height. The overall width is the sum of the two segment widths. The U-Shape behaves similarly but has three segments instead of two. " +
-        "All types of furniture can have a name. " +
-        "Furniture can be rotated by clicking the small circle within a piece of furniture. " +
-        "Furniture dropped at the garbage bin at the top right corner will be removed. ",
-      de: "In diesem Modus können Möbel erstellt, verschoben und rotiert werden. " +
-        "Möbel können im rechten Menü erstellt werden. Es gibt 4 verschiedene Typen von Möbeln. " +
-        "Die Ellipse ist durch eine Breite und eine Höhe definiert. Das Rechteck benötigt ebenfalls eine Breite und eine Höhe. Die L-Form besteht aus zwei Blöcken, die jeweils durch eine Breite und eine Höhe definiert sind. Die Gesamtbreite ergibt sich aus der Summe der einzelnen Blöcke. Die U-Form verhält sich ähnlich, hat allerdings drei Blöcke anstatt zwei. " +
-        "Möbel können einen Namen erhalten. " +
-        "Möbel können rotiert werden indem man in den kleinen Kreis innerhalb jedes Möbelstücks klickt. " +
-        "Möbelstücke die man in der Mülltonne ablegt, der rote Bereich am oberen rechten Bildschirmrand, werden gelöscht. "
-    },
-    introDisplay: {
-      en: "Display-Mode",
-      de: "Vorschau-Modus"
-    },
-    shortDisplay: {
-      en: "Visual overview of the current progress.",
-      de: "Betrachte den bisher gemachten Fortschritt."
-    },
-    explanationDisplay: {
-      en: "In this mode unused visual clutter is removed to provide a clean presentation of the created floorplan.",
-      de: "In diesem Modus werden unnötige Elemente der Anzeige entfernt um eine saubere Präsentation des erstellten Grundrisses anzuzeigen."
-    },
-    creator: {
-      en: "Created by: Karl Däubel and Denny Korsukéwitz",
-      de: "Authoren: Karl Däubel and Denny Korsukéwitz"
-    }
-  },
-  fileIO: {
-    saveButton: {
-      en: "Save",
-      de: "Speichern"
-    },
-    saveShort: {
-      en: "Save the entire project.",
-      de: "Ein komplettes Projekt speichern."
-    },
-    loadButton: {
-      en: "Load",
-      de: "Laden"
-    },
-    loadShort: {
-      en: "Load a saved project.",
-      de: "Ein gespeichertes Projekt laden."
-    },
-    exportButton: {
-      en: "Export",
-      de: "Export",
-    },
-    exportShort: {
-      en: "Export the current view to an image.",
-      de: "Exportiere die aktuelle Ansicht als Bild."
-    },
-    printButton: {
-      en: "Print",
-      de: "Drucken"
-    },
-    printShort: {
-      en: "Print the current view.",
-      de: "Drucke die aktuelle Ansicht."
-    },
-    errorAtFile: {
-      en: "There was an error while loading file:",
-      de: "Beim Lesen folgender Datei ist ein Fehler aufgetreten:"
-    },
-    errorMessage: {
-      en: "Error Message:",
-      de: "Fehlermeldung:"
-    }
-  },
-  floorplan: {
-    category: {
-      en: "Floorplan",
-      de: "Grundriss"
-    },
-    help: {
-      en: "Load A Floorplan On The Right.",
-      de: "Füge einen Grundriss rechts hinzu."
-    },
-    option: {
-      distance: {
-        en: "Length\xa0(mm):",
-        de: "Länge\xa0(mm):"
-      },
-      inputError: {
-        en: "Please input only positive numbers for length.",
-        de: "Bitte geben Sie nur positive Zahlen für die Länge ein."
-      },
-    },
-    loadButton: {
-      en: "Load Floorplan",
-      de: "Grundriss Laden"
-    },
-    clearButton: {
-      en: "Clear Floorplan",
-      de: "Grudriss Löschen"
-    }
-  },
-  room: {
-    category: {
-      en: "Room",
-      de: "Raum"
-    },
-    help: {
-      en: "Double Click Here!",
-      de: "Hier Doppelklicken!"
-    },
-    removeHelp: {
-      en: "Remove Objects Here 🡵",
-      de: "Objekte hier löschen 🡵"
-    },
-    corner: {
-      head: {
-        en: "Corner\xa0Size",
-        de: "Ecken\xa0Größe"
-      },
-      center: {
-        en: "Center:",
-        de: "Zentrum:"
-      },
-      ring: {
-        en: "Ring:",
-        de: "Ring:"
-      }
-    },
-    label: {
-      head: {
-        en: "Label",
-        de: "Beschriftung"
-      },
-      name: {
-        en: "Name:",
-        de: "Name:"
-      },
-      defaultName: {
-        en: "Livingroom",
-        de: "Wohnzimmer"
-      },
-      height: {
-        en: "Height\xa0(mm):",
-        de: "Höhe\xa0(mm):"
-      },
-      add: {
-        en: "Add",
-        de: "Hinzufügen"
-      },
-      inputError: {
-        en: "Please input only positive numbers for height and a non empty string for the name.",
-        de: "Bitte geben Sie nur positive Zahlen für die Höhe und eine nicht leere Zeichenkette für den Namen ein."
-      },
-    },
-    openable: {
-      head: {
-        en: "Door/Window",
-        de: "Tür/Fenster"
-      },
-      width: {
-        en: "Width\xa0(mm):",
-        de: "Breite\xa0(mm):"
-      },
-      type: {
-        en: "Type:",
-        de: "Typ:"
-      },
-      add: {
-        en: "Add",
-        de: "Hinzufügen"
-      },
-      inputError: {
-        en: "Please input only positive numbers for width.",
-        de: "Bitte geben Sie nur positive Zahlen für die Breite ein."
-      },
-    },
-  },
-  furniture: {
-    category: {
-      en: "Furniture",
-      de: "Möbel"
-    },
-    help: {
-      en: "Add Furniture On The Right.",
-      de: "Füge Möbel rechts hinzu."
-    },
-    removeHelp: {
-      en: "Remove Furniture Here 🡵",
-      de: "Möbel hier löschen 🡵"
-    },
-    add: {
-      name: {
-        en: "Name:",
-        de: "Name:"
-      },
-      type: {
-        en: "Type:",
-        de: "Typ:"
-      },
-      defaultName: {
-        en: "Table",
-        de: "Tisch"
-      },
-      width: {
-        en: "Width\xa0(mm):",
-        de: "Breite\xa0(mm):"
-      },
-      height: {
-        en: "Height\xa0(mm):",
-        de: "Höhe\xa0(mm):"
-      },
-      add: {
-        en: "Add",
-        de: "Hinzufügen"
-      },
-      inputError: {
-        en: "Please input only positive numbers for width and height.",
-        de: "Bitte geben Sie nur positive Zahlen für die Breite und Höhe ein."
-      },
-    },
-  },
-  presentation: {
-    category: {
-      en: "Display",
-      de: "Vorschau"
-    },
-    help: {
-      en: "File Utilities On The Right.",
-      de: "Datei Funktionalität auf der rechten Seite."
-    },
-    option: {
-      head: {
-        en: "Global Options",
-        de: "Globale Einstellungen"
-      },
-      showEdgeLabel: {
-        en: "Show Wall Length",
-        de: "Zeige Wandlänge"
-      },
-      roomSizeLabel: {
-        en: "Show Room Size",
-        de: "Zeige Raumgröße"
-      },
-    },
-  },
-};
 
+
+
+
+
+
+
+
+
+
+
+
+// под новую верстку переделать
 const floorplanButton = ref({})
 const roomButton = ref({})
 const furnitureButton = ref({})
 const presentationButton = ref({})
+
 
 function changeMode(e: MouseEvent, mode: Mode) {
   // resetElements("mode");
@@ -961,152 +324,44 @@ function changeMode(e: MouseEvent, mode: Mode) {
   drawMain();
 }
 
-// utils
-// function resetElements(type: string) {
-//   const tabContents = document.getElementsByClassName("tabContent " + type);
-//   for (const tabContent of tabContents) {
-//     (tabContent as HTMLDivElement).style.display = "none";
-//   }
-//
-//   const tabLinks = document.getElementsByClassName("tabLinks " + type);
-//   for (const tabLink of tabLinks) {
-//     tabLink.className = tabLink.className.replace(" active", "");
-//   }
-// }
-
+//функции переключения режима работы со схемой
 function changeToFloorplanMode(e: MouseEvent) { changeMode(e, Mode.Floorplan); }
 function changeToRoomMode(e: MouseEvent) { changeMode(e, Mode.Room); }
 function changeToFurnitureMode(e: MouseEvent) { changeMode(e, Mode.Furniture); }
 function changeToPresentationMode(e: MouseEvent) { changeMode(e, Mode.Presentation); }
 
 
-function changeOpenableType(e: MouseEvent, type: OpenableType) {
-  // resetElements("openableType");
-  settings.value.openableType = type;
-  console.log(settings.value.openableType)
-  // (e.currentTarget as HTMLButtonElement).className += " active";
-  drawMain();
-}
-
+//Функции переключения типв дверей для режима room
 function changeToLeftOpenableType(e: MouseEvent) { changeOpenableType(e, OpenableType.Left); }
 function changeToRightOpenableType(e: MouseEvent) { changeOpenableType(e, OpenableType.Right); }
 function changeToDoubleOpenableType(e: MouseEvent) { changeOpenableType(e, OpenableType.Double); }
 
 
-// furniture type tabs
-function changeFurnitureType(e: MouseEvent, type: FurnitureType) {
-  // resetElements("furnitureType");
-
-  settings.value.type = type;
-
-  // switch (type) {
-  //   case FurnitureType.Rectangle:
-  //     document.getElementById("rectangleTab")!.style.display = "contents";
-  //     break;
-  //   case FurnitureType.Circle:
-  //     document.getElementById("circleTab")!.style.display = "contents";
-  //     break;
-  //   case FurnitureType.L:
-  //     document.getElementById("LTab")!.style.display = "contents";
-  //     break;
-  //   case FurnitureType.U:
-  //     document.getElementById("UTab")!.style.display = "contents";
-  //     break;
-  // }
-  // (e.currentTarget as HTMLBRElement).className += " active";
-
-  drawMain();
-}
-
+// Функции переключения типа стола для режима furniture
 function changeToRectangleType(e: MouseEvent) { changeFurnitureType(e, FurnitureType.Rectangle); }
 function changeToCircleType(e: MouseEvent) { changeFurnitureType(e, FurnitureType.Circle); }
 function changeToLType(e: MouseEvent) { changeFurnitureType(e, FurnitureType.L); }
 function changeToUType(e: MouseEvent) { changeFurnitureType(e, FurnitureType.U); }
 
 
-// function validNumericInput(...values: number[]) {
-//   for (const value of values) {
-//     if (isNaN(value) || value < 1) {
-//       return false;
-//     }
-//   }
-//   return true;
-// }
-
-
-// Floorplan Mode
-// document.getElementById("distanceInput")!.addEventListener("input", (e) => {
-//   const dist = (e.target as HTMLInputElement).valueAsNumber;
-//
-//   if (!validNumericInput(dist)) {
-//     alert(getText(loc.floorplan.option.inputError));
-//     return;
-//   }
-//   floorplanImage.distance = dist;
-//
-//   drawMain();
-// });
-//
-// document.getElementById("loadFloorplan")!.addEventListener("change", (e: Event) => {
-//   const files = (e.target as HTMLInputElement).files;
-//   const file = files?.item(0);
-//
-//   if (!file) {
-//     return;
-//   }
-//
-//   let img = new Image();
-//   img.onload = (onLoadResult) => {
-//     const image = onLoadResult.target as HTMLImageElement;
-//     floorplanImage.image = image;
-//     drawMain();
-//   };
-//   img.onerror = () => {
-//     alert(getText(loc.fileIO.errorAtFile) + " " + file.name + ".");
-//   };
-//   img.src = URL.createObjectURL(file);
-// });
-//
-// document.getElementById("clearFloorplanButton")!.addEventListener("click", () => {
-//   floorplanImage.reset();
-//
-//   drawMain();
-// });
 
 
 
-// // Room Mode
-const labelNameInput = ref('roooooom')
+// Room Mode
+const labelNameInput = ref('room')
 const labelHeightInput = ref(1000)
-function addLabelButton() {
 
+function addLabelButton() {
   if (!validNumericInput(labelHeightInput.value) || !labelNameInput.value) {
     alert(getText(loc.room.label.inputError));
     return;
   }
-
   const start = projection.to({ x: 10, y: 100 });
   setFontSize(labelHeightInput.value)
   labels.push(new Rectangle(labelNameInput.value, MovableType.Rectangle, start.x, start.y, ctx.value.measureText(labelNameInput.value).width, labelHeightInput.value));
   console.log("add Label:", labelNameInput.value);
   drawMain();
-
 }
-// document.getElementById("addLabelButton")!.addEventListener("click", (e) => {
-//   e.preventDefault();
-//   const labelName = (document.getElementById("labelNameInput") as HTMLInputElement).value;
-//   const labelHeight = (document.getElementById("labelHeightInput") as HTMLInputElement).valueAsNumber;
-//
-//   if (!validNumericInput(labelHeight) || !labelName) {
-//     alert(getText(loc.room.label.inputError));
-//     return;
-//   }
-//   const start = projection.to({ x: 10, y: 100 });
-//   setFontSize(labelHeight);
-//   labels.push(new Rectangle(labelName, MovableType.Rectangle, start.x, start.y, ctx.measureText(labelName).width, labelHeight));
-//   console.log("add Label:", labelName);
-//   drawMain();
-// });
 
 function validNumericInput(...values: number[]) {
   for (const value of values) {
@@ -1118,14 +373,11 @@ function validNumericInput(...values: number[]) {
 }
 
 const openableWidthInput = ref(1000)
-
 function addOpenableButton() {
-
   if (!validNumericInput(openableWidthInput.value)) {
     alert(getText(loc.room.openable.inputError));
     return;
   }
-
   const start = projection.to({ x: 10, y: 100 })
   openables.push(new Openable(settings.value.openableType, start.x, start.y, openableWidthInput.value, 180))
   console.log("add Openable:", settings.value.openableType)
@@ -1133,23 +385,11 @@ function addOpenableButton() {
 }
 
 
-// document.getElementById("addOpenableButton")!.addEventListener("click", (e) => {
-//   e.preventDefault();
-//   const openableWidth = (document.getElementById("openableWidthInput") as HTMLInputElement).valueAsNumber;
-//
-//   if (!validNumericInput(openableWidth)) {
-//     alert(getText(loc.room.openable.inputError));
-//     return;
-//   }
-//
-//   const start = projection.to({ x: 10, y: 100 });
-//   openables.push(new Openable(settings.openableType, start.x, start.y, openableWidth, 180));
-//   console.log("add Openable:", settings.openableType);
-//   drawMain();
-// });
 
-// // Furniture Mode
 
+
+
+// Furniture Mode
 const nameInput = ref('NameInput')
 
 //Для квадрата
@@ -1234,202 +474,20 @@ function addFurnitureButton() {
 }
 
 
-
-
-
-
-// window.addEventListener("beforeunload", (e) => {
-//   if (state !== createState()) {
-//     e.preventDefault();
-//     return (e.returnValue = "");
-//   }
-//   return true;
-// });
-//
-
-
-//
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-type FloorplanImageJSON = { image: string, distance: number, node1: CornerJSON, node2: CornerJSON };
-interface FloorplanImage {
-  image: HTMLImageElement | null,
-  distance: number,
-  node1: CornerNode,
-  node2: CornerNode,
-  readonly nodeSize: number,
-
-  reset: () => void,
-
-  handleClick: (e: Point) => boolean,
-  handleMove: (e: Point) => boolean,
-  handleUnclick: () => void,
-
-  getCurrentScale: () => number,
-
-  draw: () => void,
-  drawEdge: () => void,
-  drawNodes: () => void,
-
-  toJSON: () => FloorplanImageJSON | {},
-}
-
-const floorplanImage: FloorplanImage = {
-  image: null,
-  distance: 1000,
-  node1: new CornerNode(0, 0, -20),
-  node2: new CornerNode(1, 1000, -20),
-  nodeSize: 15,
-
-  reset: function () {
-    this.image = null;
-    this.node1 = new CornerNode(0, 0, -20);
-    this.node2 = new CornerNode(1, this.distance, -20);
-  },
-
-  // e, the click position; e is in screen space
-  handleClick: function (e: Point): boolean {
-    if (this.image === null || settings.value.mode !== Mode.Floorplan) {
-      return false;
-    }
-    let selected = false;
-    const clickPos = floorplanProjection.to(e);
-
-    const dist1 = distance(clickPos, this.node1.p);
-    const dist2 = distance(clickPos, this.node2.p);
-
-    const node = dist1 <= dist2 ? this.node1 : this.node2;
-    const dist = dist1 <= dist2 ? dist1 : dist2;
-
-    if (dist <= this.nodeSize) {
-      selected = true;
-      node.translate = true;
-      node.delta.x = e.x;
-      node.delta.y = e.y;
-    }
-    return selected;
-  },
-  handleMove: function (e: Point): boolean {
-    if (this.image === null || settings.value.mode !== Mode.Floorplan) {
-      return false;
-    }
-    let changed = false;
-    for (const node of [this.node1, this.node2]) {
-      if (node.translate) {
-        changed = true;
-
-        node.p.x = node.p.x + (e.x - node.delta.x) / floorplanProjection.scale;
-        node.p.y = node.p.y + (e.y - node.delta.y) / floorplanProjection.scale;
-
-        node.delta.x = e.x;
-        node.delta.y = e.y;
-      }
-    }
-    return changed;
-  },
-  handleUnclick: function () {
-    for (const node of [this.node1, this.node2]) {
-      node.remove = false;
-      node.translate = false;
-      node.extend = false;
-      node.snap = { x: null, y: null, edge: null, pos: null };
-      node.delta = { x: 0, y: 0 };
-    }
-  },
-  getCurrentScale: function (): number {
-    return settings.value.mode === Mode.Floorplan ? 1 : this.distance / distance(this.node1.p, this.node2.p);
-  },
-  draw: function () {
-    if (this.image !== null) {
-      const currentScale = this.getCurrentScale();
-      ctx.value.drawImage(this.image, 0, 0, this.image.width * currentScale, this.image.height * currentScale);
-      if (settings.value.mode === Mode.Floorplan) {
-        this.drawEdge();
-        this.drawNodes();
-      }
-    }
-  },
-  drawEdge: function () {
-    ctx.value.beginPath();
-    ctx.value.moveTo(this.node1.p.x, this.node1.p.y);
-    ctx.value.lineTo(this.node2.p.x, this.node2.p.y);
-    ctx.value.stroke();
-
-    setFontSize(20, false);
-
-    ctx.value.save();
-    const c = {
-      x: (this.node1.p.x + this.node2.p.x) / 2,
-      y: (this.node1.p.y + this.node2.p.y) / 2,
-    };
-    ctx.value.translate(c.x, c.y);
-    const angle = Math.atan2(this.node2.p.y - this.node1.p.y, this.node2.p.x - this.node1.p.x);
-
-    ctx.value.rotate(angle < -Math.PI / 2 || angle > Math.PI / 2 ? angle + Math.PI : angle);
-    ctx.value.fillText(String(this.distance) + "mm", 0, 0, distance(this.node1.p, this.node2.p));
-
-    ctx.value.restore();
-  },
-  drawNodes: function () {
-    const angle = Math.atan2(this.node1.p.y - this.node2.p.y, this.node1.p.x - this.node2.p.x);
-
-    ctx.value.beginPath();
-    ctx.value.arc(this.node1.p.x, this.node1.p.y, this.nodeSize, angle - Math.PI / 2, angle + Math.PI / 2);
-    ctx.value.fill();
-
-    ctx.value.beginPath();
-    ctx.value.arc(this.node2.p.x, this.node2.p.y, this.nodeSize, angle + Math.PI / 2, angle - Math.PI / 2);
-    ctx.value.fill();
-
-    restoreDefaultContext();
-  },
-  toJSON: function (): FloorplanImageJSON | {} {
-    if (this.image !== null) {
-      const tmpCanvas = document.createElement('canvas') as HTMLCanvasElement;
-      const tmpCtx = tmpCanvas.getContext('2d') as CanvasRenderingContext2D;
-      tmpCanvas.style.display = "none";
-      tmpCanvas.height = this.image.naturalHeight;
-      tmpCanvas.width = this.image.naturalWidth;
-      tmpCtx.drawImage(this.image, 0, 0);
-      const dataURL = tmpCanvas.toDataURL();
-
-      return {
-        image: dataURL,
-        distance: this.distance,
-        node1: this.node1,
-        node2: this.node2,
-      }
-    }
-    return {};
-  }
-};
-
 // corner node size slider init
 const nodeTransSlider = ref(50)
 const nodeExtendSlider = ref(150)
 
-function initNodeSize() {
-  const transSlider = nodeTransSlider.value
-  const extendSlider = nodeExtendSlider.value
-
-  settings.value.nodeTransSize = Number(transSlider.value);
-  settings.value.nodeExtendSize = Number(extendSlider.value);
-
-  setNodeTransSize();
-  setNodeExtendSize();
-}
+// function initNodeSize() {
+//   const transSlider = nodeTransSlider.value
+//   const extendSlider = nodeExtendSlider.value
+//
+//   settings.value.nodeTransSize = Number(transSlider.value);
+//   settings.value.nodeExtendSize = Number(extendSlider.value);
+//
+//   setNodeTransSize();
+//   setNodeExtendSize();
+// }
 
 function setNodeTransSize() {
   settings.value.nodeTransSize = Number(nodeTransSlider.value);
@@ -1465,35 +523,35 @@ function roomSizeCheckboxInput() {
   drawMain();
 }
 
-function resetOptions() {
-  settings.value.showEdgeLabels = false;
-  edgeLabelCheckbox.value = false
+// function resetOptions() {
+//   settings.value.showEdgeLabels = false;
+//   edgeLabelCheckbox.value = false
+//
+//   settings.value.showRoomSize = false;
+//   roomSizeCheckbox.value = false
+// }
 
-  settings.value.showRoomSize = false;
-  roomSizeCheckbox.value = false
-}
+// function addElem(parent: HTMLElement, type: string, text: Localization | null = null): HTMLElement {
+//   const elem = document.createElement(type);
+//   if (text !== null) {
+//     elem.textContent = getText(text);
+//   }
+//   parent.appendChild(elem);
+//   return elem;
+// }
 
-function addElem(parent: HTMLElement, type: string, text: Localization | null = null): HTMLElement {
-  const elem = document.createElement(type);
-  if (text !== null) {
-    elem.textContent = getText(text);
-  }
-  parent.appendChild(elem);
-  return elem;
-}
-
-function addListEntry(parent: HTMLElement, type: string, head: Localization, short: Localization): HTMLElement {
-  const elem = document.createElement(type);
-  const headElem = document.createElement("b");
-  headElem.textContent = getText(head) + ": ";
-  const shortElem = document.createTextNode(getText(short));
-  elem.appendChild(headElem);
-  elem.appendChild(shortElem);
-
-  parent.appendChild(elem);
-
-  return headElem;
-}
+// function addListEntry(parent: HTMLElement, type: string, head: Localization, short: Localization): HTMLElement {
+//   const elem = document.createElement(type);
+//   const headElem = document.createElement("b");
+//   headElem.textContent = getText(head) + ": ";
+//   const shortElem = document.createTextNode(getText(short));
+//   elem.appendChild(headElem);
+//   elem.appendChild(shortElem);
+//
+//   parent.appendChild(elem);
+//
+//   return headElem;
+// }
 
 
 window.addEventListener("resize", setSize);
@@ -1509,31 +567,13 @@ function touchToCoordinates(t: Touch): Point {
   return { x: t.clientX, y: t.clientY };
 }
 
-function zoomEvent(e: WheelEvent) {
-  zoom(e, e.deltaY > 0 ? 1 / settings.value.zoomFactor : e.deltaY < 0 ? settings.value.zoomFactor : null);
-}
-
-function zoom(p: Point, factor: optionalNumber) {
-  if (factor !== null) {
-    const proj = getCurrProjection();
-    const newScale = proj.scale * factor;
-    if (newScale > settings.value.minZoom && newScale < settings.value.maxZoom) {
-      proj.scale = newScale;
-      proj.p.x = p.x - (p.x - proj.p.x) * factor;
-      proj.p.y = p.y - (p.y - proj.p.y) * factor;
-
-      drawMain();
-    }
-  }
-}
 
 function mouseDoubleClick(e: Point) {
   if (settings.value.mode === Mode.Furniture) {
     // add furniture double click
   } else if (settings.value.mode === Mode.Room) {
-    graph.value.addNode(toNextNumber(projection.to(e)));
+    graph.addNode(toNextNumber(projection.to(e)));
   }
-
   drawMain();
 }
 
@@ -1541,7 +581,7 @@ function mouseDown(e: Point) {
   let selected = false;
 
   if (settings.value.mode === Mode.Floorplan) {
-    if (floorplanImage.handleClick(e)) {
+    if (floorplanImage.value.handleClick(e)) {
       selected = true;
     }
 
@@ -1561,7 +601,7 @@ function mouseDown(e: Point) {
       }
     }
   } else if (settings.value.mode === Mode.Room) {
-    if (graph.value.handleClick(e)) {
+    if (graph.handleClick(e)) {
       selected = true;
     }
 
@@ -1595,7 +635,7 @@ function mouseMove(e: Point) {
   let changed = false;
 
   if (settings.value.mode === Mode.Floorplan) {
-    if (floorplanImage.handleMove(e)) {
+    if (floorplanImage.value.handleMove(e)) {
       changed = true;
     }
 
@@ -1620,7 +660,7 @@ function mouseMove(e: Point) {
       }
     }
   } else if (settings.value.mode === Mode.Room) {
-    if (graph.value.handleMove(e)) {
+    if (graph.handleMove(e)) {
       changed = true;
     }
     for (const openable of openables) {
@@ -1652,11 +692,11 @@ function mouseMove(e: Point) {
 
 function mouseUp(e: Point) {
   if (settings.value.mode === Mode.Floorplan) {
-    floorplanImage.handleUnclick();
+    floorplanImage.value.handleUnclick();
   } else if (settings.value.mode === Mode.Furniture) {
     mouseUpForMovables(furniture);
   } else if (settings.value.mode === Mode.Room) {
-    graph.value.handleUnclick(e);
+    graph.handleUnclick(e);
     mouseUpForMovables(openables);
     mouseUpForMovables(labels);
   }
@@ -1674,9 +714,7 @@ function mouseUp(e: Point) {
   drawMain();
 }
 
-function zoomToMiddle(factor: number) {
-  zoom({ x: canvas.value.width / 2, y: canvas.value.height / 2 }, factor);
-}
+
 
 function loadOpenable(openable: OpenableJSON, graph: Graph): Openable {
   const newOpenable = new Openable(openable.openableType, openable.p.x, openable.p.y, openable.dim.w, openable.dim.h);
@@ -1685,7 +723,8 @@ function loadOpenable(openable: OpenableJSON, graph: Graph): Openable {
   newOpenable.snap.pos = openable.snap.pos;
   newOpenable.snap.orientation = openable.snap.orientation;
   if (openable.snap.edge) {
-    newOpenable.snap.edge = graph.value.edges[openable.snap.edge.id1]![openable.snap.edge.id2]!;
+    console.log(graph)
+    newOpenable.snap.edge = graph.edges[openable.snap.edge.id1]![openable.snap.edge.id2]!;
     newOpenable.snap.edge.snapOpenables.push(newOpenable);
   }
 
@@ -1693,12 +732,14 @@ function loadOpenable(openable: OpenableJSON, graph: Graph): Openable {
   newOpenable.fill = openable.mov.fill;
   return newOpenable;
 }
+
 function loadCircle(circle: CircleJSON): Circle {
   const newCircle = new Circle(circle.name, circle.c.x, circle.c.y, circle.r);
   newCircle.stroke = circle.mov.stroke;
   newCircle.fill = circle.mov.fill;
   return newCircle;
 }
+
 function loadEllipse(ellipse: EllipseJSON): Ellipse {
   const newEllipse = new Ellipse(ellipse.name, ellipse.c.x, ellipse.c.y, ellipse.rX, ellipse.rY);
   newEllipse.stroke = ellipse.mov.stroke;
@@ -1706,6 +747,7 @@ function loadEllipse(ellipse: EllipseJSON): Ellipse {
   newEllipse.angle = ellipse.angle;
   return newEllipse;
 }
+
 function loadRectangle(rect: RectangleJSON): Rectangle {
   const newFur = new Rectangle(rect.name, rect.mov.type, rect.p.x, rect.p.y, 100, 100);
   newFur.dims = rect.dims;
@@ -1718,6 +760,7 @@ function loadRectangle(rect: RectangleJSON): Rectangle {
 function createState(): string {
   return JSON.stringify({ graph, labels, openables, furniture, floorplanImage }, null, "");
 }
+
 function setState() {
   state = createState();
 }
@@ -1731,12 +774,12 @@ function loadFloorplan(content: string, fileName: string) {
     console.error(err);
     return;
   }
-
-  graph.value.reset();
+  console.log(graph)
+  graph.reset();
   labels.length = 0;
   openables.length = 0;
   furniture.length = 0;
-  floorplanImage.reset();
+  floorplanImage.value.reset();
 
   if (floorPlanner.graph) {
     let maxId = -1;
@@ -1745,14 +788,14 @@ function loadFloorplan(content: string, fileName: string) {
       if (maxId < node.id) {
         maxId = node.id;
       }
-      graph.value.nodes[node.id] = new CornerNode(node.id, node.p.x, node.p.y);
+      graph.nodes[node.id] = new CornerNode(node.id, node.p.x, node.p.y);
     }
-    graph.value.count = maxId + 1;
+    graph.count = maxId + 1;
 
     for (const i in floorPlanner.graph.edges) {
       for (const j in floorPlanner.graph.edges[i]) {
         const edge = floorPlanner.graph.edges[i][j] as EdgeJSON;
-        graph.value.addEdge(edge.id1, edge.id2);
+        graph.addEdge(edge.id1, edge.id2);
       }
     }
   }
@@ -1766,6 +809,7 @@ function loadFloorplan(content: string, fileName: string) {
   if (floorPlanner.openables) {
     for (const openable of floorPlanner.openables) {
       openables.push(loadOpenable(openable as OpenableJSON, graph));
+      console.log(openables)
     }
   }
 
@@ -1805,13 +849,13 @@ function loadFloorplan(content: string, fileName: string) {
     };
     img.src = floorplanImageJson.image;
 
-    floorplanImage.distance = floorplanImageJson.distance;
+    floorplanImage.value.distance = floorplanImageJson.distance;
 
     const node1 = floorplanImageJson.node1;
-    floorplanImage.node1 = new CornerNode(node1.id, node1.p.x, node1.p.y);
+    floorplanImage.value.node1 = new CornerNode(node1.id, node1.p.x, node1.p.y);
 
     const node2 = floorplanImageJson.node2;
-    floorplanImage.node2 = new CornerNode(node2.id, node2.p.x, node2.p.y);
+    floorplanImage.value.node2 = new CornerNode(node2.id, node2.p.x, node2.p.y);
   }
 
   setState();
@@ -1820,9 +864,6 @@ function loadFloorplan(content: string, fileName: string) {
 }
 
 // A movable is an abstract object that can be translated and rotated on the canvas
-
-
-
 
 
 function mouseUpForMovables(movables: (Rectangle | Circle | Ellipse | Openable)[]) {
@@ -1850,361 +891,6 @@ function mouseUpForMovables(movables: (Rectangle | Circle | Ellipse | Openable)[
   }
 }
 
-// An openable is a door or window, it can be moved and rotated
-
-
-
-// A generalized rectangle with multiple segments of different dimensions, it can be moved and rotated
-
-
-
-// A circle, it can be moved and rotated
-type CircleJSON = { mov: MovableJSON, name: string, c: Point, r: number };
-class Circle extends Movable {
-  name: string;
-  c: Point;
-  r: number;
-
-  constructor(name: string, x: number, y: number, r: number) {
-    super(MovableType.Circle);
-    this.name = name;
-    this.c = {
-      x,
-      y
-    };
-    this.r = r;
-  }
-
-  center(): Point {
-    return this.c;
-  }
-
-  getDimSize(): number {
-    if (this.r <= settings.value.furnitureRotateSize) {
-      return this.r;
-    }
-    return settings.value.furnitureRotateSize;
-  }
-
-  setFontSize() {
-    setFontSize(1);
-    const textDim = ctx.value.measureText(this.name);
-    setFontSize(Math.min(Math.min(160, 2 * this.r), 2 * this.r / textDim.width));
-  }
-
-  handleClick(e: Point): boolean {
-    if (pointInCircle(this.c, this.r, projection.to(e))) {
-      this.translate = true;
-      this.delta.x = e.x;
-      this.delta.y = e.y;
-      return true;
-    }
-    return false;
-  }
-
-  handleMove(e: Point): boolean {
-    let changed = false;
-    if (this.translate) {
-      changed = true;
-
-      this.c.x += (e.x - this.delta.x) / projection.scale;
-      this.c.y += (e.y - this.delta.y) / projection.scale;
-
-      this.delta.x = e.x;
-      this.delta.y = e.y;
-
-      handleRemove(e, this);
-    }
-
-    return changed;
-  }
-
-  draw() {
-    ctx.value.save();
-
-    ctx.value.translate(this.c.x, this.c.y);
-
-    this.setStyle(settings.value.mode === Mode.Room, true);
-
-    ctx.value.beginPath();
-    ctx.value.arc(0, 0, this.r, 0, 2 * Math.PI);
-    ctx.value.stroke();
-
-    ctx.value.beginPath();
-
-    this.setFontSize();
-    ctx.value.textBaseline = "middle";
-    ctx.value.fillText(this.name, 0, 0, 2 * this.r);
-    ctx.value.textBaseline = "alphabetic";
-
-    const rotateSize = this.getDimSize();
-
-    if (this.translate) {
-      setFontSize(rotateSize);
-
-      ctx.value.beginPath();
-
-      ctx.value.moveTo(-this.r, -this.r);
-      ctx.value.lineTo(this.r, -this.r);
-      drawDistance(0, -this.r + rotateSize, 2 * this.r, null, "mm");
-      ctx.value.stroke();
-    }
-
-    ctx.value.restore();
-
-    this.drawWallDistances();
-    restoreDefaultContext();
-  }
-
-  drawWallDistances() {
-    if (this.translate || this.rotate) {
-      ctx.value.save();
-
-      this.setStyle(settings.value.mode === Mode.Room, true);
-      const rotateSize = this.getDimSize();
-      setFontSize(rotateSize * 1.5);
-
-      const center = this.center();
-
-      // right
-      drawDistanceToNextWall(center, { x: center.x + this.r, y: center.y });
-      // left
-      drawDistanceToNextWall(center, { x: center.x - this.r, y: center.y });
-      // top
-      drawDistanceToNextWall(center, { x: center.x, y: center.y - this.r });
-      // bottom
-      drawDistanceToNextWall(center, { x: center.x, y: center.y + this.r });
-
-      ctx.value.restore();
-    }
-  }
-
-  toJSON(): CircleJSON {
-    return { mov: super.movableToJSON(), name: this.name, c: this.c, r: this.r };
-  }
-}
-
-// An ellipse, it can be moved and rotated
-type EllipseJSON = { mov: MovableJSON, name: string, c: Point, rX: number, rY: number, angle: number };
-class Ellipse extends Movable {
-  name: string;
-  c: Point;
-  rX: number;
-  rY: number;
-  f: number;
-  z: number;
-  angle: number;
-
-  constructor(name: string, x: number, y: number, rX: number, rY: number) {
-    super(MovableType.Ellipse);
-    this.name = name;
-    this.c = {
-      x,
-      y
-    };
-    this.rX = rX;
-    this.rY = rY;
-    this.f = Math.sqrt(Math.max(this.rX, this.rY) ** 2 - Math.min(this.rX, this.rY) ** 2);
-    this.z = Math.min(this.rX, this.rY) ** 2 / Math.max(this.rX, this.rY);
-    this.angle = 0;
-  }
-
-  center(): Point {
-    return this.c;
-  }
-
-  getF1(): Point {
-    return this.rX < this.rY ? { x: this.c.x, y: this.c.y - this.f } : { x: this.c.x - this.f, y: this.c.y };
-  }
-
-  getF2(): Point {
-    return this.rX < this.rY ? { x: this.c.x, y: this.c.y + this.f } : { x: this.c.x + this.f, y: this.c.y };
-  }
-
-  getRotateSize(): number {
-    if (this.z <= settings.value.furnitureRotateSize) {
-      return this.z;
-    }
-    return settings.value.furnitureRotateSize;
-  }
-
-  getDimSize(): number {
-    if (this.rX <= settings.value.furnitureRotateSize || this.rY <= settings.value.furnitureRotateSize) {
-      return Math.min(this.rX, this.rY);
-    }
-    return settings.value.furnitureRotateSize;
-  }
-
-  pointInEllipse(p: Point): boolean {
-    return distance(p, this.getF1()) + distance(p, this.getF2()) <= 2 * Math.max(this.rX, this.rY);
-  }
-
-  pointInRotCircle(other: Point, radius: number): boolean {
-    const pRot = rotate(this.center(), other, -this.angle);
-    return pointInCircle(this.angleSnapPoint(), radius, pRot);
-  }
-
-  pointInRotEllipse(other: Point): boolean {
-    const pRot = rotate(this.center(), other, -this.angle);
-    return this.pointInEllipse(pRot);
-  }
-
-  setFontSize() {
-    setFontSize(1);
-    const textDim = ctx.value.measureText(this.name);
-    setFontSize(Math.min(Math.min(160, 2 * this.rY), 2 * this.rX / textDim.width));
-  }
-
-  angleSnapPoint(): Point {
-    return this.getF2();
-  }
-
-  handleClick(e: Point): boolean {
-    if (this.rX !== this.rY && this.pointInRotCircle(projection.to(e), this.getRotateSize() / 2)) {
-      this.rotate = true;
-      this.delta.x = e.x;
-      this.delta.y = e.y;
-      return true;
-    } else if (this.pointInRotEllipse(projection.to(e))) {
-      this.translate = true;
-      this.delta.x = e.x;
-      this.delta.y = e.y;
-      return true;
-    }
-    return false;
-  }
-
-  handleMove(e: Point): boolean {
-    let changed = false;
-    if (this.translate) {
-      changed = true;
-
-      this.c.x += (e.x - this.delta.x) / projection.scale;
-      this.c.y += (e.y - this.delta.y) / projection.scale;
-
-      this.delta.x = e.x;
-      this.delta.y = e.y;
-
-      handleRemove(e, this);
-    } else if (this.rotate) {
-      changed = true;
-      const a = angleBetweenPoints(projection.from(this.center()),
-        this.delta,
-        e);
-      if (!handleSnap(this, [360, 270, 180, 90], Math.abs((this.angle + a + 360) % 360), settings.value.furnitureSnapAngle)) {
-        this.angle += a;
-
-        this.delta.x = e.x;
-        this.delta.y = e.y;
-      }
-    }
-
-    return changed;
-  }
-
-  draw() {
-    ctx.value.save();
-
-    ctx.value.translate(this.c.x, this.c.y);
-    ctx.value.rotate(toRad(this.angle));
-
-    this.setStyle(settings.value.mode === Mode.Room, true);
-
-    ctx.value.beginPath();
-    ctx.value.ellipse(0, 0, this.rX, this.rY, 0, 0, 2 * Math.PI);
-    ctx.value.stroke();
-
-    ctx.value.beginPath();
-
-    this.setFontSize();
-    ctx.value.textBaseline = "middle";
-    ctx.value.fillText(this.name, 0, 0, 2 * this.rX);
-    ctx.value.textBaseline = "alphabetic";
-
-    const rotateSize = this.getRotateSize();
-
-    if (settings.value.mode === Mode.Furniture && this.rX !== this.rY) {
-      ctx.value.beginPath();
-      const f = this.angleSnapPoint();
-      ctx.value.arc(
-        f.x - this.c.x,
-        f.y - this.c.y,
-        rotateSize / 2,
-        0,
-        2 * Math.PI
-      );
-      ctx.value.stroke();
-    }
-
-    const dimSize = this.getDimSize();
-
-    if (this.translate || this.rotate) {
-      setFontSize(dimSize);
-
-      ctx.value.beginPath();
-
-      ctx.value.moveTo(-this.rX, -this.rY);
-      ctx.value.lineTo(this.rX, -this.rY);
-      drawDistance(0, -this.rY + dimSize, 2 * this.rX, null, "mm");
-
-      ctx.value.moveTo(-this.rX, -this.rY);
-      ctx.value.lineTo(-this.rX, this.rY);
-
-      ctx.value.translate(-this.rX + dimSize, 0);
-      ctx.value.rotate(toRad(-90));
-      drawDistance(0, 0, 2 * this.rY, null, "mm");
-
-      ctx.value.stroke();
-    }
-
-    ctx.value.restore();
-
-    this.drawWallDistances();
-    restoreDefaultContext();
-  }
-
-  drawWallDistances() {
-    if (this.translate || this.rotate) {
-      ctx.value.save();
-
-      this.setStyle(settings.value.mode === Mode.Room, true);
-      const rotateSize = this.getDimSize();
-      setFontSize(rotateSize * 1.5);
-
-      const center = this.center();
-
-      // right
-      drawDistanceToNextWall(center, rotate(center, { x: center.x + this.rX, y: center.y }, this.angle));
-      // left
-      drawDistanceToNextWall(center, rotate(center, { x: center.x - this.rX, y: center.y }, this.angle));
-      // top
-      drawDistanceToNextWall(center, rotate(center, { x: center.x, y: center.y - this.rY }, this.angle));
-      // bottom
-      drawDistanceToNextWall(center, rotate(center, { x: center.x, y: center.y + this.rY }, this.angle));
-
-      ctx.value.restore();
-    }
-  }
-
-  toJSON(): EllipseJSON {
-    return { mov: super.movableToJSON(), name: this.name, c: this.c, rX: this.rX, rY: this.rY, angle: this.angle };
-  }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function navZoomIn() {
   zoomToMiddle(Math.pow(settings.value.zoomFactor, 4))
 }
@@ -2215,22 +901,6 @@ function navZoomOut() {
 
 function navCenter() {
   centerProjection()
-}
-
-function navUp() {
-  moveProjection(Direction.Up)
-}
-
-function navRight() {
-  moveProjection(Direction.Right)
-}
-
-function navDown() {
-  moveProjection(Direction.Down)
-}
-
-function navLeft() {
-  moveProjection(Direction.Left)
 }
 
 
@@ -2312,16 +982,11 @@ function printButton() {
 
 
 
-
-
-
-
-
 onMounted(() => {
   canvas.value = document.getElementById("canvas")
   ctx.value = canvas.value.getContext("2d")
 
-  graph.value =   {
+  const defaultObjectGraph = {
     count: 0,
     nodes: {},
     edges: {},
@@ -3045,7 +1710,140 @@ onMounted(() => {
       return { nodes: this.nodes, edges: this.edges };
     },
   };
+    for (const prop in defaultObjectGraph) {
+      graph[prop] = defaultObjectGraph[prop];
+    }
+    console.log(graph)
 
+  floorplanImage.value = {
+      image: null,
+      distance: 1000,
+      node1: new CornerNode(0, 0, -20),
+      node2: new CornerNode(1, 1000, -20),
+      nodeSize: 15,
+
+      reset: function () {
+        this.image = null;
+        this.node1 = new CornerNode(0, 0, -20);
+        this.node2 = new CornerNode(1, this.distance, -20);
+      },
+
+      // e, the click position; e is in screen space
+      handleClick: function (e: Point): boolean {
+        if (this.image === null || settings.value.mode !== Mode.Floorplan) {
+          return false;
+        }
+        let selected = false;
+        const clickPos = floorplanProjection.to(e);
+
+        const dist1 = distance(clickPos, this.node1.p);
+        const dist2 = distance(clickPos, this.node2.p);
+
+        const node = dist1 <= dist2 ? this.node1 : this.node2;
+        const dist = dist1 <= dist2 ? dist1 : dist2;
+
+        if (dist <= this.nodeSize) {
+          selected = true;
+          node.translate = true;
+          node.delta.x = e.x;
+          node.delta.y = e.y;
+        }
+        return selected;
+      },
+      handleMove: function (e: Point): boolean {
+        if (this.image === null || settings.value.mode !== Mode.Floorplan) {
+          return false;
+        }
+        let changed = false;
+        for (const node of [this.node1, this.node2]) {
+          if (node.translate) {
+            changed = true;
+
+            node.p.x = node.p.x + (e.x - node.delta.x) / floorplanProjection.scale;
+            node.p.y = node.p.y + (e.y - node.delta.y) / floorplanProjection.scale;
+
+            node.delta.x = e.x;
+            node.delta.y = e.y;
+          }
+        }
+        return changed;
+      },
+      handleUnclick: function () {
+        for (const node of [this.node1, this.node2]) {
+          node.remove = false;
+          node.translate = false;
+          node.extend = false;
+          node.snap = { x: null, y: null, edge: null, pos: null };
+          node.delta = { x: 0, y: 0 };
+        }
+      },
+      getCurrentScale: function (): number {
+        return settings.value.mode === Mode.Floorplan ? 1 : this.distance / distance(this.node1.p, this.node2.p);
+      },
+      draw: function () {
+        if (this.image !== null) {
+          const currentScale = this.getCurrentScale();
+          ctx.value.drawImage(this.image, 0, 0, this.image.width * currentScale, this.image.height * currentScale);
+          if (settings.value.mode === Mode.Floorplan) {
+            this.drawEdge();
+            this.drawNodes();
+          }
+        }
+      },
+      drawEdge: function () {
+        ctx.value.beginPath();
+        ctx.value.moveTo(this.node1.p.x, this.node1.p.y);
+        ctx.value.lineTo(this.node2.p.x, this.node2.p.y);
+        ctx.value.stroke();
+
+        setFontSize(20, false);
+
+        ctx.value.save();
+        const c = {
+          x: (this.node1.p.x + this.node2.p.x) / 2,
+          y: (this.node1.p.y + this.node2.p.y) / 2,
+        };
+        ctx.value.translate(c.x, c.y);
+        const angle = Math.atan2(this.node2.p.y - this.node1.p.y, this.node2.p.x - this.node1.p.x);
+
+        ctx.value.rotate(angle < -Math.PI / 2 || angle > Math.PI / 2 ? angle + Math.PI : angle);
+        ctx.value.fillText(String(this.distance) + "mm", 0, 0, distance(this.node1.p, this.node2.p));
+
+        ctx.value.restore();
+      },
+      drawNodes: function () {
+        const angle = Math.atan2(this.node1.p.y - this.node2.p.y, this.node1.p.x - this.node2.p.x);
+
+        ctx.value.beginPath();
+        ctx.value.arc(this.node1.p.x, this.node1.p.y, this.nodeSize, angle - Math.PI / 2, angle + Math.PI / 2);
+        ctx.value.fill();
+
+        ctx.value.beginPath();
+        ctx.value.arc(this.node2.p.x, this.node2.p.y, this.nodeSize, angle + Math.PI / 2, angle - Math.PI / 2);
+        ctx.value.fill();
+
+        restoreDefaultContext();
+      },
+      toJSON: function (): FloorplanImageJSON | {} {
+        if (this.image !== null) {
+          const tmpCanvas = document.createElement('canvas') as HTMLCanvasElement;
+          const tmpCtx = tmpCanvas.getContext('2d') as CanvasRenderingContext2D;
+          tmpCanvas.style.display = "none";
+          tmpCanvas.height = this.image.naturalHeight;
+          tmpCanvas.width = this.image.naturalWidth;
+          tmpCtx.drawImage(this.image, 0, 0);
+          const dataURL = tmpCanvas.toDataURL();
+
+          return {
+            image: dataURL,
+            distance: this.distance,
+            node1: this.node1,
+            node2: this.node2,
+          }
+        }
+        return {};
+      }
+    };
   settings.value = {
     language: "en",
     mode: Mode.Room,
@@ -3076,8 +1874,6 @@ onMounted(() => {
   document.addEventListener("mouseup", mouseUp)
   canvas.value.addEventListener("dblclick", mouseDoubleClick)
   canvas.value.addEventListener("wheel", zoomEvent)
-
-  console.log(ctx.value)
 
   setSize()
 

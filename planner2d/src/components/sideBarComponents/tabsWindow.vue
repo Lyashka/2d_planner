@@ -12,12 +12,15 @@ const props = defineProps({
 
 const tab = ref(props.tab)
 const items = [
-  { title: 'Floor', subtitle: 'Этаж', icon: mdiFloorPlan },
-  { title: 'Room', subtitle: 'Комната', icon: mdiCropFree },
-  { title: 'Furniture', subtitle: 'Мебель', icon: mdiTableFurniture },
-  { title: 'Display', subtitle: 'Дисплей', icon: mdiEye },
-
+  { id: 0, title: 'FloorPlan', subtitle: 'Этаж' , icon: mdiFloorPlan },
+  { id: 1, title: 'Room', subtitle: 'Комната' ,icon: mdiCropFree },
+  { id: 2, title: 'Furniture', subtitle: 'Мебель' ,icon: mdiTableFurniture },
+  { id: 3, title: 'Display', subtitle: 'Отображение' ,icon: mdiEye },
 ]
+
+
+
+
 </script>
 
 <template>
@@ -31,6 +34,7 @@ const items = [
       v-for="item in items"
       :key="item.title"
       :value="item.title"
+      @click="$emit('changeMode',item.title)"
     >
       <v-icon class="mb-1" :icon="item.icon" :size="35"/>
       <v-list-item-title>{{ item.subtitle }}</v-list-item-title>

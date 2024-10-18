@@ -268,27 +268,6 @@ let state: optionalString = null;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // под новую верстку переделать
 const floorplanButton = ref({})
 const roomButton = ref({})

@@ -85,6 +85,7 @@ export class Ellipse extends Movable {
   }
 
   handleClick(e: Point): boolean {
+    const { projection } = useProjectionStore()
     if (this.rX !== this.rY && this.pointInRotCircle(projection.to(e), this.getRotateSize() / 2)) {
       this.rotate = true;
       this.delta.x = e.x;
@@ -100,6 +101,7 @@ export class Ellipse extends Movable {
   }
 
   handleMove(e: Point): boolean {
+    const { projection } = useProjectionStore()
     const { settings } = useSettingsStore()
     let changed = false;
     if (this.translate) {

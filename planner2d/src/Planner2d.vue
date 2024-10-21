@@ -7,48 +7,37 @@
       <div id="content">
         <canvas id="canvas">Your browser does not support the HTML 5 Canvas.</canvas>
 
-        <div class="navBar">
-          <button type="button" id="navZoomIn" class="navBarButton" @click="navZoomIn">⊕</button>
-          <button type="button" id="navCenter" class="navBarButton" @click="navCenter">⊚</button>
-          <button type="button" id="navZoomOut" class="navBarButton" @click="navZoomOut">⊖</button>
-        </div>
 
+<!--        <div id="sidebar">-->
 
+<!--          <div class="tab mode buttonRow">-->
+<!--            <button type="button" id="floorplanButton" class="tabLinks mode" @click="changeToFloorplanMode">floorplan</button>-->
+<!--            <button type="button" id="roomButton" class="tabLinks mode" @click="changeToRoomMode">room</button>-->
+<!--            <button type="button" id="furnitureButton" class="tabLinks mode" @click="changeToFurnitureMode">furniture</button>-->
+<!--            <button type="button" id="presentationButton" class="tabLinks mode" @click="changeToPresentationMode">presentation</button>-->
+<!--          </div>-->
 
-
-
-
-
-        <div id="sidebar">
-
-          <div class="tab mode buttonRow">
-            <button type="button" id="floorplanButton" class="tabLinks mode" @click="changeToFloorplanMode">floorplan</button>
-            <button type="button" id="roomButton" class="tabLinks mode" @click="changeToRoomMode">room</button>
-            <button type="button" id="furnitureButton" class="tabLinks mode" @click="changeToFurnitureMode">furniture</button>
-            <button type="button" id="presentationButton" class="tabLinks mode" @click="changeToPresentationMode">presentation</button>
-          </div>
-
-          <table>
-            <tbody>
-            <tr>
-              <td><label id="distanceInputLabel" for="distanceInput"></label></td>
-              <td class="inputTD">
-                <input type="number" id="distanceInput" class="w100pc" min="1" value="1000" required="">
-              </td>
-            </tr>
-            <tr>
-              <td colspan="2">
-                <label id="loadFloorplanButton" class="loadInputClass w100pc" for="loadFloorplan"></label>
-                <input type="file" id="loadFloorplan" class="loadFileClass">
-              </td>
-            </tr>
-            <tr>
-              <td colspan="2">
-                <button id="clearFloorplanButton" class="addButton"></button>
-              </td>
-            </tr>
-            </tbody>
-          </table>
+<!--          <table>-->
+<!--            <tbody>-->
+<!--            <tr>-->
+<!--              <td><label id="distanceInputLabel" for="distanceInput"></label></td>-->
+<!--              <td class="inputTD">-->
+<!--                <input type="number" id="distanceInput" class="w100pc" min="1" value="1000" required="">-->
+<!--              </td>-->
+<!--            </tr>-->
+<!--            <tr>-->
+<!--              <td colspan="2">-->
+<!--                <label id="loadFloorplanButton" class="loadInputClass w100pc" for="loadFloorplan"></label>-->
+<!--                <input type="file" id="loadFloorplan" class="loadFileClass">-->
+<!--              </td>-->
+<!--            </tr>-->
+<!--            <tr>-->
+<!--              <td colspan="2">-->
+<!--                <button id="clearFloorplanButton" class="addButton"></button>-->
+<!--              </td>-->
+<!--            </tr>-->
+<!--            </tbody>-->
+<!--          </table>-->
 
 
 
@@ -137,35 +126,37 @@
         </div>
 
 
-        <div>
-          <!--        Изменение размера узлов-->
-          <label id="nodeTransSliderLabel" for="nodeTransSlider">Corner Size</label>
-          <input type="range" id="nodeTransSlider" class="w100pc" min="5" max="750" v-model="nodeTransSlider" @input="setNodeTransSize">
-          <label id="nodeExtendSliderLabel" for="nodeExtendSlider">Label</label>
-          <input type="range" id="nodeExtendSlider" class="w100pc" min="5" max="750" v-model="nodeExtendSlider" @input="setNodeExtendSize">
+<!--        <div>-->
+<!--          &lt;!&ndash;        Изменение размера узлов&ndash;&gt;-->
+<!--          <label id="nodeTransSliderLabel" for="nodeTransSlider">Corner Size</label>-->
+<!--          <input type="range" id="nodeTransSlider" class="w100pc" min="5" max="750" v-model="nodeTransSlider" @input="setNodeTransSize">-->
+<!--          <label id="nodeExtendSliderLabel" for="nodeExtendSlider">Label</label>-->
+<!--          <input type="range" id="nodeExtendSlider" class="w100pc" min="5" max="750" v-model="nodeExtendSlider" @input="setNodeExtendSize">-->
 
-          <!--        Добавление лейблов-->
-          <label id="labelNameInputLabel" for="labelNameInput">  name</label>
-          <input id="labelNameInput" value="Livingroom" class="w100pc" v-model="labelNameInput">
-          <label id="labelHeightInputLabel" for="labelHeightInput">heigth</label>
-          <input type="number" id="labelHeightInput" class="w100pc" min="1" value="1000" required="" v-model="labelHeightInput">
-          <button id="addLabelButton" class="addButton" @click="addLabelButton">add lable</button>
+<!--          &lt;!&ndash;        Добавление лейблов&ndash;&gt;-->
+<!--          <label id="labelNameInputLabel" for="labelNameInput">  name</label>-->
+<!--          <input id="labelNameInput" value="Livingroom" class="w100pc" v-model="labelNameInput">-->
+<!--          <label id="labelHeightInputLabel" for="labelHeightInput">heigth</label>-->
+<!--          <input type="number" id="labelHeightInput" class="w100pc" min="1" value="1000" required="" v-model="labelHeightInput">-->
+<!--          <button id="addLabelButton" class="addButton" @click="addLabelButton">add lable</button>-->
 
 
-          <!--        Добавление дверей-->
-          <label id="openableWidthInputLabel" for="openableWidthInput">Door/Window</label>
-          <input type="number" id="openableWidthInput" class="w100pc" min="1" v-model="openableWidthInput" required="">
-          <label id="openableTypeInputLabel" for="leftOpenableButton"> type</label>
-          <button type="button" id="leftOpenableButton" class="tabLinks openableType" @click="changeToLeftOpenableType" >L</button>
-          <button type="button" id="rightOpenableButton" class="tabLinks openableType" @click="changeToRightOpenableType" >R</button>
-          <button type="button" id="doubleOpenableButton" class="tabLinks openableType" @click="changeToDoubleOpenableType">D</button>
-          <button id="addOpenableButton" class="addButton" @click="addOpenableButton"> add </button>
-        </div>
+<!--          &lt;!&ndash;        Добавление дверей&ndash;&gt;-->
+<!--          <label id="openableWidthInputLabel" for="openableWidthInput">Door/Window</label>-->
+<!--          <input type="number" id="openableWidthInput" class="w100pc" min="1" v-model="openableWidthInput" required="">-->
+<!--          <label id="openableTypeInputLabel" for="leftOpenableButton"> type</label>-->
+
+<!--          <button type="button" id="leftOpenableButton" class="tabLinks openableType" @click="changeToLeftOpenableType" >L</button>-->
+<!--          <button type="button" id="rightOpenableButton" class="tabLinks openableType" @click="changeToRightOpenableType" >R</button>-->
+<!--          <button type="button" id="doubleOpenableButton" class="tabLinks openableType" @click="changeToDoubleOpenableType">D</button>-->
+
+<!--          <button id="addOpenableButton" class="addButton" @click="addOpenableButton"> add </button>-->
+<!--        </div>-->
 
       </div>
 
 
-    </div>
+<!--    </div>-->
   </v-main>
 
   <SideBar/>
@@ -212,6 +203,7 @@ import { useSettingsStore } from './store/settingsStore'
 import { useProjectionStore} from './store/projectionStore'
 import { useGraphStore } from './store/graphStore'
 import { useFloorplanImageStore } from './store/floorplanImageStore'
+import { useStateStore } from './store/stateStore'
 
 import { Openable } from './classes/Openable'
 import { Movable } from './classes/Movable'
@@ -230,6 +222,7 @@ import { zoomToMiddle, centerProjection, zoomEvent, zoom } from './composables/z
 import { moveProjection } from './composables/moveProjection'
 import { changeOpenableType } from './composables/changeOpenableType'
 import { changeFurnitureType } from './composables/changeFurnitureType'
+import { setState } from './composables/setState'
 
 import { loc } from './composables/loc'
 
@@ -244,7 +237,8 @@ import {
   pointInCircle,
   getIntersectionPoint,
   getTrapezoidArea,
-  handleSnap
+  handleSnap,
+  validNumericInput
 } from './composables/calculations'
 
 const { canvas, ctx } = useCanvasStore()
@@ -253,9 +247,8 @@ const { projection, floorplanProjection } = useProjectionStore()
 const { graph } = useGraphStore()
 const { floorplanImage, labels, openables, furniture } = useFloorplanImageStore()
 
-
 // state will lazily track changes since init or last save/load as string
-let state: optionalString = null;
+
 
 
 
@@ -330,26 +323,19 @@ function changeToUType(e: MouseEvent) { changeFurnitureType(e, FurnitureType.U);
 const labelNameInput = ref('room')
 const labelHeightInput = ref(1000)
 
-function addLabelButton() {
-  if (!validNumericInput(labelHeightInput.value) || !labelNameInput.value) {
-    alert(getText(loc.room.label.inputError));
-    return;
-  }
-  const start = projection.to({ x: 10, y: 100 });
-  setFontSize(labelHeightInput.value)
-  labels.push(new Rectangle(labelNameInput.value, MovableType.Rectangle, start.x, start.y, ctx.value.measureText(labelNameInput.value).width, labelHeightInput.value));
-  console.log("add Label:", labelNameInput.value);
-  drawMain();
-}
+// function addLabelButton() {
+//   if (!validNumericInput(labelHeightInput.value) || !labelNameInput.value) {
+//     alert(getText(loc.room.label.inputError));
+//     return;
+//   }
+//   const start = projection.to({ x: 10, y: 100 });
+//   setFontSize(labelHeightInput.value)
+//   labels.push(new Rectangle(labelNameInput.value, MovableType.Rectangle, start.x, start.y, ctx.value.measureText(labelNameInput.value).width, labelHeightInput.value));
+//   console.log("add Label:", labelNameInput.value);
+//   drawMain();
+// }
 
-function validNumericInput(...values: number[]) {
-  for (const value of values) {
-    if (isNaN(value) || value < 1) {
-      return false;
-    }
-  }
-  return true;
-}
+
 
 const openableWidthInput = ref(1000)
 function addOpenableButton() {
@@ -468,24 +454,24 @@ const nodeExtendSlider = ref(150)
 //   setNodeExtendSize();
 // }
 
-function setNodeTransSize() {
-  settings.value.nodeTransSize = Number(nodeTransSlider.value);
-  settings.value.nodeExtendSize = Math.max(settings.value.nodeExtendSize, settings.value.nodeTransSize);
-
-  nodeExtendSlider.value = String(settings.value.nodeExtendSize);
-
-  drawMain();
-}
-
-function setNodeExtendSize() {
-
-  settings.value.nodeExtendSize = Number(nodeExtendSlider.value);
-  settings.value.nodeTransSize = Math.min(settings.value.nodeExtendSize, settings.value.nodeTransSize);
-
-  nodeTransSlider.value = String(settings.value.nodeTransSize);
-
-  drawMain();
-}
+// function setNodeTransSize() {
+//   settings.value.nodeTransSize = Number(nodeTransSlider.value);
+//   settings.value.nodeExtendSize = Math.max(settings.value.nodeExtendSize, settings.value.nodeTransSize);
+//
+//   nodeExtendSlider.value = String(settings.value.nodeExtendSize);
+//
+//   drawMain();
+// }
+//
+// function setNodeExtendSize() {
+//
+//   settings.value.nodeExtendSize = Number(nodeExtendSlider.value);
+//   settings.value.nodeTransSize = Math.min(settings.value.nodeExtendSize, settings.value.nodeTransSize);
+//
+//   nodeTransSlider.value = String(settings.value.nodeTransSize);
+//
+//   drawMain();
+// }
 
 
 const edgeLabelCheckbox = ref(false)
@@ -536,8 +522,8 @@ function roomSizeCheckboxInput() {
 window.addEventListener("resize", setSize);
 
 function setSize() {
-  canvas.value.width = window.innerWidth * 0.8;
-  canvas.value.height = window.innerHeight * 0.8;
+  canvas.value.width = window.innerWidth;
+  canvas.value.height = window.innerHeight ;
 
   drawMain();
 }
@@ -736,13 +722,8 @@ function loadRectangle(rect: RectangleJSON): Rectangle {
   return newFur;
 }
 
-function createState(): string {
-  return JSON.stringify({ graph, labels, openables, furniture, floorplanImage }, null, "");
-}
 
-function setState() {
-  state = createState();
-}
+
 
 function loadFloorplan(content: string, fileName: string) {
   let floorPlanner;
@@ -868,18 +849,6 @@ function mouseUpForMovables(movables: (Rectangle | Circle | Ellipse | Openable)[
       mov.delta.y = 0;
     }
   }
-}
-
-function navZoomIn() {
-  zoomToMiddle(Math.pow(settings.value.zoomFactor, 4))
-}
-
-function navZoomOut() {
-  zoomToMiddle(1 / Math.pow(settings.value.zoomFactor, 4))
-}
-
-function navCenter() {
-  centerProjection()
 }
 
 
@@ -2005,26 +1974,25 @@ button.active {
 }
 #container {
   position: static;
-  width: 100%;
+
 
 }
 #content {
   /*position: absolute;*/
   inset: 0;
   display: flex;
-  width: 100%;
+
 }
 
 #canvas {
-  flex: 50%;
+  /*flex: 100%;
   height: 100%;
-  width: 80%;
+  width: 100%;*/
 }
 
 #sidebar {
   flex: 100%;
   background-color: #4caf50;
-
 
   /*overflow: auto;*/
 }

@@ -78,3 +78,12 @@ export function handleSnap(mov: Rectangle | Ellipse, values: number[], angle: nu
   }
   return false;
 }
+
+export function validNumericInput(...values: number[]) {
+  for (const value of values) {
+    if (isNaN(value) || value < 1) {
+      return false;
+    }
+  }
+  return true;
+}

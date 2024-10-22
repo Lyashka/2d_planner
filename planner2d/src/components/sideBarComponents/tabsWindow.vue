@@ -1,27 +1,3 @@
-<script setup>
-
-import TabFurniture from "./tabFurniture.vue";
-import TabRoom from "./tabRoom.vue";
-import TabFloor from "./tabFloor.vue";
-import { ref } from "vue";
-import { mdiCropFree, mdiEye, mdiFloorPlan, mdiTableFurniture } from "@mdi/js";
-
-const props = defineProps({
-  tab: String
-})
-
-const tab = ref(props.tab)
-const items = [
-  { id: 0, title: 'FloorPlan', subtitle: 'Этаж' , icon: mdiFloorPlan },
-  { id: 1, title: 'Room', subtitle: 'Комната' ,icon: mdiCropFree },
-  { id: 2, title: 'Furniture', subtitle: 'Мебель' ,icon: mdiTableFurniture },
-  { id: 3, title: 'Display', subtitle: 'Отображение' ,icon: mdiEye },
-]
-
-
-
-
-</script>
 
 <template>
   <v-tabs
@@ -58,4 +34,47 @@ const items = [
       <tab-furniture />
     </v-tabs-window-item>
   </v-tabs-window>
+
+  <v-checkbox label="Длины стен" v-model="edgeLabelCheckbox" @click="edgeLabelCheckboxInput"></v-checkbox>
+  <v-checkbox label="Квадратные метры помещения" v-model="roomSizeCheckbox" @click="roomSizeCheckboxInput"></v-checkbox>
 </template>
+
+<script setup>
+
+import TabFurniture from "./tabFurniture.vue";
+import TabRoom from "./tabRoom.vue";
+import TabFloor from "./tabFloor.vue";
+import { ref } from "vue";
+import { mdiCropFree, mdiEye, mdiFloorPlan, mdiTableFurniture } from "@mdi/js";
+import { drawMain } from '../../composables/drawMain'
+
+import { useSettingsStore } from '../../store/settingsStore'
+const { settings } = useSettingsStore()
+
+const props = defineProps({
+  tab: String
+})
+
+const tab = ref(props.tab)
+const items = [
+  { id: 0, title: 'FloorPlan', subtitle: 'Этаж' , icon: mdiFloorPlan },
+  { id: 1, title: 'Room', subtitle: 'Комната' ,icon: mdiCropFree },
+  { id: 2, title: 'Furniture', subtitle: 'Мебель' ,icon: mdiTableFurniture },
+  { id: 3, title: 'Display', subtitle: 'Отображение' ,icon: mdiEye },
+]
+
+
+
+const edgeLabelCheckbox = ref(settings.value.showEdgeLabels)
+const roomSizeCheckbox = ref(settings.value.showRoomSize)
+function edgeLabelCheckboxInput() {
+  settings.value.showEdgeLabels = !edgeLabelCheckbox.value
+  drawMain();
+}
+
+function roomSizeCheckboxInput() {
+  settings.value.showRoomSize = !roomSizeCheckbox.value
+  drawMain();
+}
+
+</script>

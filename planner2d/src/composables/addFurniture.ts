@@ -41,26 +41,26 @@ export function addFurnitureButton(nameInput, objSizes) {
     }
 
     case FurnitureType.L: {
-      if (!validNumericInput(LWidthInput1.value, LHeightInput1.value, LWidthInput2.value, LHeightInput2.value)) {
+      if (!validNumericInput(objSizes.LWidthInput1, objSizes.LHeightInput1, objSizes.LWidthInput2, objSizes.LHeightInput2)) {
         alert(getText(loc.furniture.add.inputError));
         return;
       }
       const start = projection.to({ x: 10, y: 100 });
-      let newRect = new Rectangle(nameInput.value, MovableType.L, start.x, start.y, LWidthInput1.value, LHeightInput1.value);
-      newRect.dims.push({ w:  LWidthInput2.value, h: LHeightInput2.value });
+      const newRect = new Rectangle(nameInput.value, MovableType.L, start.x, start.y, objSizes.LWidthInput1, objSizes.LHeightInput1);
+      newRect.dims.push({ w:  objSizes.LWidthInput2, h: objSizes.LHeightInput2 });
       furniture.push(newRect);
       break;
     }
 
     case FurnitureType.U: {
-      if (!validNumericInput(UWidthInput1.value, UHeightInput1.value, UWidthInput2.value, UHeightInput2.value, UWidthInput3.value, UHeightInput3.value)) {
+      if (!validNumericInput(objSizes.UWidthInput1, objSizes.UHeightInput1, objSizes.UWidthInput2, objSizes.UHeightInput2, objSizes.UWidthInput3, objSizes.UHeightInput3)) {
         alert(getText(loc.furniture.add.inputError));
         return;
       }
       const start = projection.to({ x: 10, y: 100 });
-      let newRect = new Rectangle(nameInput.value, MovableType.U, start.x, start.y, UWidthInput1.value, UHeightInput1.value);
-      newRect.dims.push({ w: UWidthInput2.value, h: UHeightInput2.value });
-      newRect.dims.push({ w: UWidthInput3.value, h: UHeightInput3.value });
+      const newRect = new Rectangle(nameInput.value, MovableType.U, start.x, start.y, objSizes.UWidthInput1, objSizes.UHeightInput1);
+      newRect.dims.push({ w: objSizes.UWidthInput2, h: objSizes.UHeightInput2 });
+      newRect.dims.push({ w: objSizes.UWidthInput3, h: objSizes.UHeightInput3 });
       furniture.push(newRect);
       break;
     }

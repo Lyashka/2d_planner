@@ -41,89 +41,89 @@
 
 
 
-          <table>
-            <tbody>
-            <tr>
-              <td><label id="nameInputLabel" for="nameInput"></label></td>
-              <td class="inputTD">
-                <input id="nameInput" class="w100pc" value="Couch" v-model="nameInput">
-              </td>
-            </tr>
-            <tr>
-              <td><label id="typeInputLabel" for="circleButton"></label></td>
-              <td class="tab furnitureType buttonRow">
-                <button type="button" id="circleButton" class="tabLinks furnitureType" @click="changeToCircleType">○</button>
-                <button type="button" id="rectangleButton" class="tabLinks furnitureType" @click="changeToRectangleType">▭</button>
-                <button type="button" id="LButton" class="tabLinks furnitureType" @click="changeToLType">╔</button>
-                <button type="button" id="UButton" class="tabLinks furnitureType" @click="changeToUType">╔╗</button>
-              </td>
-            </tr>
-            <tr>
-              <td><label id="circleWidthInputLabel" for="circleWidthInput">Круг</label></td>
-              <td class="inputTD">
-                <input type="number" id="circleWidthInput" class="w100pc" min="1" value="1000" required="" v-model="circleWidthInput">
-                <input type="number" id="circleHeightInput" class="w100pc" min="1" value="1000" required="" v-model="circleHeightInput">
-              </td>
-            </tr>
+<!--          <table>-->
+<!--            <tbody>-->
+<!--            <tr>-->
+<!--              <td><label id="nameInputLabel" for="nameInput"></label></td>-->
+<!--              <td class="inputTD">-->
+<!--                <input id="nameInput" class="w100pc" value="Couch" v-model="nameInput">-->
+<!--              </td>-->
+<!--            </tr>-->
+<!--            <tr>-->
+<!--              <td><label id="typeInputLabel" for="circleButton"></label></td>-->
+<!--              <td class="tab furnitureType buttonRow">-->
+<!--                <button type="button" id="circleButton" class="tabLinks furnitureType" @click="changeToCircleType">○</button>-->
+<!--                <button type="button" id="rectangleButton" class="tabLinks furnitureType" @click="changeToRectangleType">▭</button>-->
+<!--                <button type="button" id="LButton" class="tabLinks furnitureType" @click="changeToLType">╔</button>-->
+<!--                <button type="button" id="UButton" class="tabLinks furnitureType" @click="changeToUType">╔╗</button>-->
+<!--              </td>-->
+<!--            </tr>-->
+<!--            <tr>-->
+<!--              <td><label id="circleWidthInputLabel" for="circleWidthInput">Круг</label></td>-->
+<!--              <td class="inputTD">-->
+<!--                <input type="number" id="circleWidthInput" class="w100pc" min="1" value="1000" required="" v-model="circleWidthInput">-->
+<!--                <input type="number" id="circleHeightInput" class="w100pc" min="1" value="1000" required="" v-model="circleHeightInput">-->
+<!--              </td>-->
+<!--            </tr>-->
 
-            <tr>
-              <td><label id="widthInputLabel" for="widthInput">Прямоугольник</label></td>
-              <td class="inputTD">
-                <input type="number" id="widthInput" class="w100pc" min="1" value="2000" required="" v-model="widthInput">
-                <input type="number" id="heightInput" class="w100pc" min="1" value="1000" required="" v-model="heightInput">
-              </td>
-            </tr>
+<!--            <tr>-->
+<!--              <td><label id="widthInputLabel" for="widthInput">Прямоугольник</label></td>-->
+<!--              <td class="inputTD">-->
+<!--                <input type="number" id="widthInput" class="w100pc" min="1" value="2000" required="" v-model="widthInput">-->
+<!--                <input type="number" id="heightInput" class="w100pc" min="1" value="1000" required="" v-model="heightInput">-->
+<!--              </td>-->
+<!--            </tr>-->
 
-            <tr>
-              <td><label id="LWidthInputLabel" for="LWidthInput1">Г-образная</label></td>
-              <td class="inputTD">
-                <input type="number" id="LWidthInput1" class="w50pc" min="1" value="1000" required="" v-model="LWidthInput1">
-                <input type="number" id="LWidthInput2" class="w50pc" min="1" value="1000" required="" v-model="LWidthInput2">
-              </td>
-              <td class="inputTD">
-                <input type="number" id="LHeightInput1" class="w50pc" min="1" value="2000" required="" v-model="LHeightInput1">
-                <input type="number" id="LHeightInput2" class="w50pc" min="1" value="1000" required="" v-model="LHeightInput2">
-              </td>
-            </tr>
+<!--            <tr>-->
+<!--              <td><label id="LWidthInputLabel" for="LWidthInput1">Г-образная</label></td>-->
+<!--              <td class="inputTD">-->
+<!--                <input type="number" id="LWidthInput1" class="w50pc" min="1" value="1000" required="" v-model="LWidthInput1">-->
+<!--                <input type="number" id="LWidthInput2" class="w50pc" min="1" value="1000" required="" v-model="LWidthInput2">-->
+<!--              </td>-->
+<!--              <td class="inputTD">-->
+<!--                <input type="number" id="LHeightInput1" class="w50pc" min="1" value="2000" required="" v-model="LHeightInput1">-->
+<!--                <input type="number" id="LHeightInput2" class="w50pc" min="1" value="1000" required="" v-model="LHeightInput2">-->
+<!--              </td>-->
+<!--            </tr>-->
 
 
-            <tr>
-              <td><label id="UWidthInputLabel" for="UWidthInput1">П-образная</label></td>
-              <td class="inputTD">
-                <input type="number" id="UWidthInput1" class="w33pc" min="1" value="1000" required="" v-model="UWidthInput1">
-                <input type="number" id="UWidthInput2" class="w33pc" min="1" value="1000" required="" v-model="UWidthInput2">
-                <input type="number" id="UWidthInput3" class="w33pc" min="1" value="1000" required="" v-model="UWidthInput3">
-              </td>
-              <td class="inputTD">
-                <input type="number" id="UHeightInput1" class="w33pc" min="1" value="2000" required="" v-model="UHeightInput1">
-                <input type="number" id="UHeightInput2" class="w33pc" min="1" value="1000" required="" v-model="UHeightInput2">
-                <input type="number" id="UHeightInput3" class="w33pc" min="1" value="2000" required="" v-model="UHeightInput3">
-              </td>
-            </tr>
+<!--            <tr>-->
+<!--              <td><label id="UWidthInputLabel" for="UWidthInput1">П-образная</label></td>-->
+<!--              <td class="inputTD">-->
+<!--                <input type="number" id="UWidthInput1" class="w33pc" min="1" value="1000" required="" v-model="UWidthInput1">-->
+<!--                <input type="number" id="UWidthInput2" class="w33pc" min="1" value="1000" required="" v-model="UWidthInput2">-->
+<!--                <input type="number" id="UWidthInput3" class="w33pc" min="1" value="1000" required="" v-model="UWidthInput3">-->
+<!--              </td>-->
+<!--              <td class="inputTD">-->
+<!--                <input type="number" id="UHeightInput1" class="w33pc" min="1" value="2000" required="" v-model="UHeightInput1">-->
+<!--                <input type="number" id="UHeightInput2" class="w33pc" min="1" value="1000" required="" v-model="UHeightInput2">-->
+<!--                <input type="number" id="UHeightInput3" class="w33pc" min="1" value="2000" required="" v-model="UHeightInput3">-->
+<!--              </td>-->
+<!--            </tr>-->
 
-            <tr>
-              <td colspan="2">
-                <button id="addFurnitureButton" class="addButton" @click="addFurnitureButton">add Furniture</button>
-              </td>
-            </tr>
-            </tbody>
-          </table>
+<!--            <tr>-->
+<!--              <td colspan="2">-->
+<!--                <button id="addFurnitureButton" class="addButton" @click="addFurnitureButton">add Furniture</button>-->
+<!--              </td>-->
+<!--            </tr>-->
+<!--            </tbody>-->
+<!--          </table>-->
 
           <!--         Чекбоксы и кнопки СОХРАНИТЬ, ЗАГРУЗИТЬ, ЭКСПОРТ, ПРИНТ-->
-          <div style="display: flex; flex-direction: column">
-            <label for="edgeLabelCheckbox">Длины стен</label>
-            <input type="checkbox" id="edgeLabelCheckbox" class="checkboxClass" v-model="edgeLabelCheckbox" @input="edgeLabelCheckboxInput">
+<!--          <div style="display: flex; flex-direction: column">-->
+<!--            <label for="edgeLabelCheckbox">Длины стен</label>-->
+<!--            <input type="checkbox" id="edgeLabelCheckbox" class="checkboxClass" v-model="edgeLabelCheckbox" @input="edgeLabelCheckboxInput">-->
 
-            <label for="roomSizeCheckbox">Квадратные метры помещения</label>
-            <input type="checkbox" id="roomSizeCheckbox" class="checkboxClass" v-model="roomSizeCheckbox" @input="roomSizeCheckboxInput">
-            <button type="button" id="saveButton" @click="saveButton">save</button>
-            <label id="loadButton" class="loadInputClass" for="loadInput">load</label>
-            <input type="file" id="loadInput" class="loadFileClass" @input="loadInput">
-            <button type="button" id="exportButton" @click="exportButton">export</button>
-            <button type="button" id="printButton" @click="printButton">print</button>
-          </div>
+<!--            <label for="roomSizeCheckbox">Квадратные метры помещения</label>-->
+<!--            <input type="checkbox" id="roomSizeCheckbox" class="checkboxClass" v-model="roomSizeCheckbox" @input="roomSizeCheckboxInput">-->
+<!--&lt;!&ndash;            <button type="button" id="saveButton" @click="saveButton">save</button>&ndash;&gt;-->
+<!--&lt;!&ndash;            <label id="loadButton" class="loadInputClass" for="loadInput">load</label>&ndash;&gt;-->
+<!--&lt;!&ndash;            <input type="file" id="loadInput" class="loadFileClass" @input="loadInput">&ndash;&gt;-->
+<!--&lt;!&ndash;            <button type="button" id="exportButton" @click="exportButton">export</button>&ndash;&gt;-->
+<!--&lt;!&ndash;            <button type="button" id="printButton" @click="printButton">print</button>&ndash;&gt;-->
+<!--          </div>-->
 
-        </div>
+<!--        </div>-->
 
 
 <!--        <div>-->
@@ -151,7 +151,7 @@
 <!--          <button type="button" id="doubleOpenableButton" class="tabLinks openableType" @click="changeToDoubleOpenableType">D</button>-->
 
 <!--          <button id="addOpenableButton" class="addButton" @click="addOpenableButton"> add </button>-->
-<!--        </div>-->
+        </div>
 
       </div>
 

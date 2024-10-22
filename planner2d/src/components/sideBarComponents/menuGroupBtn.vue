@@ -1,4 +1,7 @@
 <template>
+
+
+
   <v-row class=" ga-4 " no-gutters>
     <v-col>
         <v-btn
@@ -68,6 +71,7 @@
 
   </v-row>
 
+
 </template>
 
 <script setup lang="ts">
@@ -78,13 +82,13 @@ import { loadInput } from '../../composables/eventGroup/loadFile'
 import { exportButton } from '../../composables/eventGroup/exportFileAsPNG'
 import { printButton } from '../../composables/eventGroup/printFileAsPDF'
 
-
 const items = [
   {title: 'Save', icon: mdiContentSave},
   {title: 'Download', icon: mdiDownload},
   {title: 'Export', icon: mdiFileExport},
   {title: 'Print', icon: mdiPrinter},
 ]
+
 
 const inputUpload = ref(null);
 

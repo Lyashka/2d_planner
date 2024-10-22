@@ -73,11 +73,16 @@
           </v-list-item>
         </v-col>
       </v-row>
+
     </v-list>
+
     <tabs-window v-else :tab="tab" @changeMode="changeMode"/>
 
 
+
   </v-navigation-drawer>
+
+
 </template>
 
 <script setup>
@@ -161,5 +166,7 @@ function zoomFloor(zoomValue) {
       break;
   }
 }
+
+
 
 </script>

@@ -16,10 +16,19 @@ import { toRad } from './calculations'
 
 function drawScale() {
   const { ctx, canvas } = useCanvasStore()
-  const { projection } = useProjectionStore()
+  const { projection, floorplanProjection } = useProjectionStore()
+  const { settings } = useSettingsStore()
 
-  const lhs = projection.to({ x: 0, y: 0 });
-  const rhs = projection.to({ x: canvas.value.width, y: 0 });
+  let modeProjection
+  if (settings.value.mode === Mode.Room || settings.value.mode === Mode.Furniture || settings.value.mode === Mode.Presentation) {
+    modeProjection = projection
+  }
+  else if(settings.value.mode === Mode.Floorplan) {
+    modeProjection = floorplanProjection
+  }
+
+  const lhs = modeProjection.to({ x: 0, y: 0 });
+  const rhs = modeProjection.to({ x: canvas.value.width, y: 0 });
   const scaleWidth = (rhs.x - lhs.x) / 3;
   let range = 0.1;
   while (scaleWidth / (range * 10) > 2) {
@@ -40,18 +49,18 @@ function drawScale() {
 
   let i = 0;
   for (; i < scaleWidth; i += range) {
-    ctx.value.moveTo((-projection.p.x + 20) / projection.scale + i, (-projection.p.y + 17) / projection.scale);
-    ctx.value.lineTo((-projection.p.x + 20) / projection.scale + i, (-projection.p.y + 27) / projection.scale);
+    ctx.value.moveTo((-modeProjection.p.x + 20) / modeProjection.scale + i, (-modeProjection.p.y + 17) / modeProjection.scale);
+    ctx.value.lineTo((-modeProjection.p.x + 20) / modeProjection.scale + i, (-modeProjection.p.y + 27) / modeProjection.scale);
     if (i % (10 * range) === 0 || Math.floor(scaleWidth / range) < 10) {
       ctx.value.fillText((i / units) + unit,
-        (-projection.p.x + 20) / projection.scale + i,
-        (-projection.p.y + 15) / projection.scale,
+        (-modeProjection.p.x + 20) / modeProjection.scale + i,
+        (-modeProjection.p.y + 15) / modeProjection.scale,
         Math.floor(scaleWidth / range) < 10 ? range : scaleWidth / 2);
     }
   }
 
-  ctx.value.moveTo((-projection.p.x + 20) / projection.scale, (-projection.p.y + 22) / projection.scale);
-  ctx.value.lineTo((-projection.p.x + 20) / projection.scale + i - range, (-projection.p.y + 22) / projection.scale);
+  ctx.value.moveTo((-modeProjection.p.x + 20) / modeProjection.scale, (-modeProjection.p.y + 22) / modeProjection.scale);
+  ctx.value.lineTo((-modeProjection.p.x + 20) / modeProjection.scale + i - range, (-modeProjection.p.y + 22) / modeProjection.scale);
 
   ctx.value.stroke();
   restoreDefaultContext();
@@ -59,15 +68,25 @@ function drawScale() {
 function drawDeletionField() {
   const { ctx, canvas } = useCanvasStore()
   const { settings } = useSettingsStore()
-  const { projection } = useProjectionStore()
+  const { projection, floorplanProjection } = useProjectionStore()
 
   // only display garbage bin if needed
   if (settings.value.mode === Mode.Presentation) {
     return;
   }
 
-  const a = projection.to({ x: canvas.value.width - settings.value.deleteDim.w, y: 0 })
-  const d = projection.to({ x: canvas.value.width, y: settings.value.deleteDim.h })
+  let a
+  let d
+  if (settings.value.mode === Mode.Room || settings.value.mode === Mode.Furniture) {
+     a = projection.to({ x: canvas.value.width - settings.value.deleteDim.w, y: 0 })
+     d = projection.to({ x: canvas.value.width, y: settings.value.deleteDim.h })
+  }
+  else if(settings.value.mode === Mode.Floorplan){
+    a = floorplanProjection.to({ x: canvas.value.width - settings.value.deleteDim.w, y: 0 })
+    d = floorplanProjection.to({ x: canvas.value.width, y: settings.value.deleteDim.h })
+  }
+
+
 
   ctx.value.lineJoin = "round"
   ctx.value.strokeStyle = "red"
@@ -111,7 +130,7 @@ function drawDeletionField() {
 
 
 export function drawMain() {
-  const { graph } = useGraphStore()
+  const { graph, floorPlanGraph } = useGraphStore()
   const { floorplanImage, labels, openables, furniture } = useFloorplanImageStore()
   const { ctx, canvas } = useCanvasStore()
   const { settings } = useSettingsStore()
@@ -125,58 +144,87 @@ export function drawMain() {
   ctx.value.fillRect(0, 0, canvas.value.width, canvas.value.height);
 
   if (settings.value.mode === Mode.Floorplan) {
+
     ctx.value.translate(floorplanProjection.p.x, floorplanProjection.p.y);
     ctx.value.scale(floorplanProjection.scale, floorplanProjection.scale);
 
     // global properties
     restoreDefaultContext();
 
-    floorplanImage.value.draw();
+    drawScale();
+    drawDeletionField();
 
-    if (floorplanImage.value.image === null) {
+    // floorPlanGraph.draw();
+    if (Object.keys(floorPlanGraph.nodes).length === 0) {
       drawHelp();
+    } else {
+      for (let i = labels.length - 1; i >= 0; i--) {
+        const label = labels[i];
+        if (label !== undefined) {
+          drawLabel(label);
+        }
+      }
+
+      for (let i = openables.length - 1; i >= 0; i--) {
+        const openable = openables[i];
+        if (openable !== undefined) {
+          openable.draw();
+        }
+      }
+
+      floorPlanGraph.draw();
+
+      for (let i = furniture.length - 1; i >= 0; i--) {
+        const fur = furniture[i];
+        if (fur !== undefined) {
+          fur.draw();
+        }
+      }
     }
 
     return;
+  }else{
+    ctx.value.translate(projection.p.x, projection.p.y);
+    ctx.value.scale(projection.scale, projection.scale);
+
+    // global properties
+    restoreDefaultContext();
+
+    // floorplanImage.value.draw();
+
+    drawScale();
+    drawDeletionField();
+
+    if (Object.keys(graph.nodes).length === 0 && furniture.length === 0 && openables.length === 0 && labels.length === 0) {
+      drawHelp();
+    } else {
+
+      for (let i = labels.length - 1; i >= 0; i--) {
+        const label = labels[i];
+        if (label !== undefined) {
+          drawLabel(label);
+        }
+      }
+
+      for (let i = openables.length - 1; i >= 0; i--) {
+        const openable = openables[i];
+        if (openable !== undefined) {
+          openable.draw();
+        }
+      }
+
+      graph.draw();
+
+      for (let i = furniture.length - 1; i >= 0; i--) {
+        const fur = furniture[i];
+        if (fur !== undefined) {
+          fur.draw();
+        }
+      }
+    }
   }
 
-  ctx.value.translate(projection.p.x, projection.p.y);
-  ctx.value.scale(projection.scale, projection.scale);
 
-  // global properties
-  restoreDefaultContext();
-
-  floorplanImage.value.draw();
-
-  drawScale();
-  drawDeletionField();
-
-  if (Object.keys(graph.nodes).length === 0 && furniture.length === 0 && openables.length === 0 && labels.length === 0 && floorplanImage.value.image === null) {
-    drawHelp();
-  } else {
-    for (let i = labels.length - 1; i >= 0; i--) {
-      const label = labels[i];
-      if (label !== undefined) {
-        drawLabel(label);
-      }
-    }
-
-    for (let i = openables.length - 1; i >= 0; i--) {
-      const openable = openables[i];
-      if (openable !== undefined) {
-        openable.draw();
-      }
-    }
-
-    graph.draw();
-
-    for (let i = furniture.length - 1; i >= 0; i--) {
-      const fur = furniture[i];
-      if (fur !== undefined) {
-        fur.draw();
-      }
-    }
-  }
 }
 
 function drawHelp() {

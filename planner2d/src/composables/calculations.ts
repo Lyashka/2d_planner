@@ -1,5 +1,6 @@
 import { Dim, Point } from '../defs'
 import { useProjectionStore } from '../store/projectionStore'
+import { useSettingsStore } from '../store/settingsStore'
 
 export function toRad(angle: number): number {
   return Math.PI * angle / 180;
@@ -65,11 +66,17 @@ function snap(angle: number, value: number, diff: number): boolean {
 }
 
 export function handleSnap(mov: Rectangle | Ellipse, values: number[], angle: number, diff: number): boolean {
-  const { projection } = useProjectionStore()
+  const { projection, floorplanProjection} = useProjectionStore()
+  const { settings } = useSettingsStore()
   for (const value of values) {
     if (snap(angle, value, diff)) {
       mov.angle = value % 360;
-      mov.delta = projection.from(rotate(mov.center(),
+      mov.delta = settings.value.mode === Mode.Floorplan ?
+        floorplanProjection.from(rotate(mov.center(),
+        mov.angleSnapPoint(),
+        value % 360
+      ))
+        : projection.from(rotate(mov.center(),
         mov.angleSnapPoint(),
         value % 360
       ));

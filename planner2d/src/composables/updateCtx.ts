@@ -1,7 +1,8 @@
 import { getCurrProjection } from './getCurrProjection'
 import { useCanvasStore } from '../store/canvasStore'
 import { useGraphStore } from '../store/graphStore'
-import { Point } from '../defs'
+import { useSettingsStore } from '../store/settingsStore'
+import { Point, Mode } from '../defs'
 import { distance } from './calculations'
 
 
@@ -33,8 +34,11 @@ export function setFontSize(size: number, fixed: boolean = true, bold: boolean =
 
 export function drawDistanceToNextWall(center: Point, border: Point) {
   const { ctx } = useCanvasStore()
-  const { graph } = useGraphStore()
-  const intersectionPoint = graph.nextEdgeToSegment(center, border)
+  const { graph, floorPlanGraph} = useGraphStore()
+  const { settings } = useSettingsStore()
+
+  const intersectionPoint = settings.value.mode === Mode.Floorplan ? floorPlanGraph.nextEdgeToSegment(center, border) : graph.nextEdgeToSegment(center, border)
+
   if (intersectionPoint !== null) {
     ctx.value.beginPath()
     ctx.value.moveTo(border.x, border.y)

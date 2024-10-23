@@ -13,7 +13,7 @@ export function zoomToMiddle(factor: number) {
 }
 
 export function centerProjection() {
-  const { graph } = useGraphStore()
+  const { graph, floorPlanGraph} = useGraphStore()
   const { floorplanImage, openables ,labels, furniture } = useFloorplanImageStore()
   const { settings } = useSettingsStore()
   const { canvas } = useCanvasStore()
@@ -41,6 +41,19 @@ export function centerProjection() {
       updateBoundary(fur.center());
     }
     for (const node of Object.values(graph.nodes)) {
+      updateBoundary(node.p);
+    }
+  }else{
+    for (const openable of openables) {
+      updateBoundary(openable.p);
+    }
+    for (const label of labels) {
+      updateBoundary(label.p);
+    }
+    for (const fur of furniture) {
+      updateBoundary(fur.center());
+    }
+    for (const node of Object.values(floorPlanGraph.nodes)) {
       updateBoundary(node.p);
     }
   }
